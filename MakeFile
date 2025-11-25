@@ -1,0 +1,130 @@
+# Variables
+CXX := g++
+PYTHON := python3
+CXXFLAGS := -std=c++2b -O3
+TARGET := Code
+SRC := Code.cpp
+
+CONTEST ?=
+GYM ?=
+PROBLEM ?= 
+
+ifeq ($(OS),Windows_NT)
+    CLEAN_TESTS := @if exist tests rmdir /S /Q tests 2>nul
+	CLEAN_TEST_FILES := @if exist tests\*.* del /Q tests\*.* 2>nul
+    CLEAN_TARGET := @if exist $(TARGET).exe del /Q $(TARGET).exe 2>nul
+    CLEAN_OUTPUT := @if exist Output.txt del /Q Output.txt 2>nul
+else
+    CLEAN_TESTS := @rm -rf tests 2>/dev/null || true
+	CLEAN_TEST_FILES := @rm -f tests/* 2>/dev/null || true
+    CLEAN_TARGET := @rm -f $(TARGET) 2>/dev/null || true  
+    CLEAN_OUTPUT := @rm -f Output.txt 2>/dev/null || true
+endif
+
+.PHONY: check-tools
+check-tools:
+	@which $(CXX) >/dev/null || (echo "$(CXX) not found! Install build tools." && exit 1)
+	@which $(PYTHON) >/dev/null || (echo "$(PYTHON) not found! Install Python." && exit 1)
+
+# Default target
+.DEFAULT_GOAL := help
+all: $(TARGET)
+
+# Link and compile
+$(TARGET): $(SRC)
+	@echo Compiling $(SRC)...
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC)
+	@echo "Compilation successful!"
+
+# Run the binary
+run: $(TARGET)
+	@if [ ! -f "input.txt" ]; then echo "⚠️ input.txt not found, creating..."; touch input.txt; fi
+	@echo "Running $(TARGET)..."
+	./$(TARGET)
+
+# Fetch Codeforces samples - Windows version
+fetch:
+ifeq ($(strip $(CONTEST)$(GYM)),)
+	@echo "Error: Contest ID required"
+	@echo "Usage:"
+	@echo "  make fetch CONTEST=2139 PROBLEM=B  (for regular contests)"
+	@echo "  make fetch GYM=106084 PROBLEM=B    (for gym contests)"
+	@exit 1
+endif
+ifeq ($(PROBLEM),)
+	@echo "Error: PROBLEM parameter required"
+	@echo "Usage: make fetch CONTEST=2139 PROBLEM=B"
+	@exit 1
+endif
+	@$(MKDIR)
+ifdef CONTEST
+	@echo "Fetching contest $(CONTEST) problem $(PROBLEM)..."
+	$(PYTHON) cf_fetch.py contest $(CONTEST) $(PROBLEM)
+endif
+ifdef GYM
+	@echo "Fetching gym $(GYM) problem $(PROBLEM)..."
+	$(PYTHON) cf_fetch.py gym $(GYM) $(PROBLEM)
+endif
+
+tests:
+	@$(MKDIR)
+
+# Test runner - Windows version
+test-only: $(TARGET)
+ifeq ($(PROBLEM),)
+	@echo Error: PROBLEM parameter is required
+	@echo Usage: make test-only PROBLEM=B
+	@exit 1
+endif
+	@$(PYTHON) run_tests.py $(PROBLEM) $(TARGET)
+
+# Contest-style test runner (fetch + test)
+test: fetch test-only
+
+# Clean build artifacts
+clean:
+	@echo "Cleaning..."
+	$(CLEAN_TEST_FILES)
+	@echo "Clean complete!"
+
+# Debug build
+debug:
+	$(CXX) -std=c++2b -g -O0 -Wall -Wextra -DDEBUG -o $(TARGET) $(SRC)
+
+# Simple check
+check: check-tools
+	@echo "Checking compiler..."
+	@$(CXX) --version
+	@echo "Check complete!"
+
+# Show available tests
+show-tests:
+	@echo Available test files:
+ifeq ($(OS),Windows_NT)
+	@dir tests 2>nul || echo No tests directory found
+else
+	@ls -la tests/ 2>/dev/null || echo No tests directory found
+endif
+
+help:
+	@echo "Competitive Programming Makefile"
+	@echo ""
+	@echo "Fetch Tests:"
+	@echo "  make fetch CONTEST=1789 PROBLEM=C"
+	@echo "  make fetch GYM=104114 PROBLEM=A"
+	@echo ""
+	@echo "Build:"
+	@echo "  make          - Compile optimized"
+	@echo "  make debug    - Compile with debug"
+	@echo ""
+	@echo "Test:"
+	@echo "  make test CONTEST=1789 PROBLEM=C   - Fetch + test"
+	@echo "  make test GYM=104114 PROBLEM=A    - Fetch + test"
+	@echo "  make test-only PROBLEM=C           - Test only"
+	@echo ""
+	@echo "Other:"
+	@echo "  make run      - Run with input.txt"
+	@echo "  make clean    - Clean files"
+	@echo "  make check    - Verify setup"
+
+.PHONY: all run clean debug check fetch test test-only show-tests help

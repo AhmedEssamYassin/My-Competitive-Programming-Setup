@@ -41,6 +41,6 @@
 			"    return 0;",
 			"}"
 		],
-		"description": "Competitive programming template with timestamp"
+		"description": "Competitive programming template with author name and timestamp"
 	}
 }

@@ -66,13 +66,17 @@ def runTest(executable, inputFile, expectedOutputFile, timeout = 6):
         except Exception as e:
             return False, f"RUNTIME ERROR: {e}"
         
+        if result.stderr:
+            # Print the stderr content (debug messages) to the terminal
+            sys.stderr.write(f"\n--- {YELLOW}Debug{RESET} Output for {Path(inputFile).stem} ---\n")
+            sys.stderr.write(result.stderr)
+            sys.stderr.write("--------------------------------------------------------------------------------\n")
+
         if result.returncode != 0:
             return False, f"RUNTIME ERROR (exit code {result.returncode})"
         
         # Clean up any existing Output.txt
         outputFilePath = "Output.txt"
-
-        # ... (run the program) ...
 
         # Read actual output from Output.txt
         outputFilePath = "Output.txt"
@@ -184,10 +188,10 @@ def main():
     
     print()
     if passed == total and total > 0:
-        print(f"{GREEN}All {total} tests passed ✅{RESET}")
+        print(f"{GREEN}All {total} tests passed{RESET}")
         sys.exit(0)
     else:
-        print(f"{RED}{passed} / {total} tests passed ❌{RESET}")
+        print(f"{RED}{passed} / {total} tests passed{RESET}")
         sys.exit(1)
 
 if __name__ == "__main__":

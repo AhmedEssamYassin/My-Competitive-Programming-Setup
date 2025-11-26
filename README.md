@@ -1,28 +1,27 @@
-# 🚀 Competitive Programming Setup
+# Competitive Programming Setup
 
 A powerful, automated toolkit for competitive programming that streamlines your workflow from problem fetching to testing. Built with Python and C++, this setup handles everything so you can focus on solving problems.
 
-## ✨ Features
+## Features
 
-### 🎯 **One-Command Problem Setup**
-- Automatically fetch sample test cases from Codeforces
-- Auto-detect contest type (regular/gym)
+### **One-Command Problem Setup**
+- Automatically fetch sample test cases from [Codeforces](https://codeforces.com/)
 - Parse time limits and metadata
 - Ready-to-test environment in seconds
 
-### ⚡ **Lightning-Fast Testing**
+### **Lightning-Fast Testing**
 - Parallel test execution with custom timeouts
 - Detailed diff output for wrong answers
-- Color-coded results (✅ PASSED, ❌ FAILED, ⏰ TLE)
+- Color-coded results (PASSED, FAILED, TLE)
 - Smart executable detection (Windows/Linux compatible)
 
-### 🔧 **Advanced Debugging**
+### **Advanced Debugging**
 - Comprehensive debug template with colored output
 - Variable inspection with type-aware printing
 - Performance timing for code sections
 - Support for complex STL containers
 
-### 🛠️ **Cross-Platform Build System**
+### **Cross-Platform Build System**
 - Optimized compilation flags (`-O3`, `-std=c++2b`)
 - Debug builds with full error checking
 - Automatic dependency management
@@ -36,44 +35,56 @@ A powerful, automated toolkit for competitive programming that streamlines your 
 | `cf_fetch.py` | Codeforces sample test downloader | Auto-detection, HTML parsing, metadata extraction |
 | `run_tests.py` | Test runner with advanced verification | Timeout handling, detailed diffs, color output |
 | `debug.cpp` | Advanced debugging template | STL container printing, timers, colored output |
+| `cpp.json` | VS Code Snippet | Instant template generation with timestamp & debug setup |
 
-## 🚀 Quick Start
+## Quick Start
 
-### Most Common Commands
+### Most Common Commands (on windows)
 
 ```bash
 # Fetch problem and run tests (most used!)
-make test CONTEST=1789 PROBLEM=C
+make -f makefile test CONTEST=1789 PROBLEM=C
 
 # For gym contests
-make test GYM=104114 PROBLEM=A
+make -f makefile test GYM=104114 PROBLEM=A
 
 # Test existing downloaded samples
-make test-only PROBLEM=B
+make -f makefile test-only PROBLEM=B
 
 # Compile and run with input.txt
-make run
+make -f makefile run
 
 # Debug build with full error checking
-make debug
+make -f makefile debug
 ```
 
-## 💪 Power Features in Action
+## Powerful Features in Action
 
-### 1. **Intelligent Problem Fetching**
+### 1. VS Code Snippets
+
+This setup includes a custom VS Code snippet (`cpp.json`) that instantly generates your competitive programming template with the current timestamp and debug configurations. (and also any other templates you would like to add).
+
+#### Installation
+To make the snippet work, you must place the `cpp.json` file in your VS Code User Snippets directory:
+
+**Required Path:**
+```
+C:\Users\(username)\AppData\Roaming\Code\User\snippets
+```
+
+### 2. **Intelligent Problem Fetching**
 ```bash
-make fetch CONTEST=2139 PROBLEM=B
+make -f makefile fetch CONTEST=2139 PROBLEM=B
 ```
 **What happens:**
 - 🌐 Fetches from `https://codeforces.com/contest/2139/problem/B`
 - 📊 Parses HTML to extract sample inputs/outputs
 - ⏱️ Extracts time limit (e.g., "2 seconds")
 - 📝 Creates `tests/B1.in`, `tests/B1.out`, `tests/B_metadata.json`
-- 🎯 Auto-detects contest type based on ID patterns
 
-### 2. **Advanced Test Runner**
+### 3. **Advanced Test Runner**
 ```bash
-make test-only PROBLEM=B
+make -f makefile test-only PROBLEM=B
 ```
 **Output Example:**
 ```
@@ -95,54 +106,71 @@ make test-only PROBLEM=B
 ✅ 2 / 3 tests passed ❌
 ```
 
-### 3. **Powerful Debug Template**
-Include `debug.cpp` in your solution:
-```cpp
-#include "debug.cpp"
+### 4. **Powerful Debug Template**
+This debug template is mainly by: [Anshul_Johri](https://codeforces.com/profile/Anshul_Johri), you can find the full blog on codeforces [here](https://codeforces.com/blog/entry/125435) and was modified by **me** to add `LabeledTimer`
 
-int main() {
-    vector<int> arr = {1, 2, 3};
-    map<string, int> mp = {{"hello", 5}, {"world", 3}};
-    
-    debug(arr, mp);  // Colored output with variable names
-    
-    LabeledTimer timer("sorting");
-    sort(arr.begin(), arr.end());
-    // Timer automatically prints elapsed time
-}
+Include `debug.cpp` in your solution:
+
+```cpp
+#ifndef ONLINE_JUDGE
+#include "debug.cpp"
+#define TIME_BLOCK(name)    \
+	if (bool _once = false) \
+	{                       \
+	}                       \
+	else                    \
+		for (__DEBUG_UTIL__::LabeledTimer _t(name); !_once; _once = true)
+#else
+#define debug(...)
+#define debugArr(...)
+#define TIME_BLOCK(name) if (true)
+#endif // Debugging locally
+```
+
+#### Example:
+```cpp
+vector<int> arr{1, 2, 3};
+map<string, int> mp;
+mp["hello"] = 5;
+mp["world"] = 3;
+debug(arr, mp);
 ```
 
 **Debug Output:**
 ```
 🔵 42: [arr = {1,2,3} || mp = {("hello",5),("world",3)}]
+```
+
+### Performance Testing
+```cpp
+TIME_BLOCK ("sorting")
+{
+    sort(arr.begin(), arr.end());
+}
+// Timers print automatically when destroyed
+```
+**Output:**
+```
 🔴 [TIMER] sorting took: 0.000123 s
 ```
 
-### 4. **Smart Cross-Platform Compatibility**
+### 5. **Smart Cross-Platform Compatibility**
 - **Windows**: Auto-adds `.exe` extension, handles Windows paths
 - **Linux**: Native Unix commands and paths
 - **Both**: Color support detection, proper encoding handling
 
-## 🎯 Typical Workflow
+## Typical Workflow
 
 ```bash
-# 1. Start a new problem
-make test CONTEST=1847 PROBLEM=D
+# 1. Write your solution in Code.cpp
+# 2. Fetch and Test
+make -f makefile test CONTEST=1847 PROBLEM=D
 
-# 2. Write your solution in Code.cpp
-vim Code.cpp
+# 3. For subsequences testing (no need to fetch again)
+make -f makefile test-only PROBLEM=D
 
-# 3. Test your solution
-make test-only PROBLEM=D
-
-# 4. Debug if needed
-make debug
-make test-only PROBLEM=D
-
-# 5. Submit when all tests pass! ✅
+# 5. Submit when all tests pass!
 ```
-
-## 🔧 Advanced Usage
 
 ### Custom Test Cases
 Add your own test cases:
@@ -151,59 +179,29 @@ Add your own test cases:
 make test-only PROBLEM=D  # Will run all tests including custom ones
 ```
 
-### Performance Testing
-```cpp
-#include "debug.cpp"
-int main() {
-    LabeledTimer total("solution");
-    
-    // Your solution here
-    {
-        LabeledTimer sort_phase("sorting");
-        sort(arr.begin(), arr.end());
-    }
-    
-    {
-        LabeledTimer search_phase("binary_search");
-        // binary search code
-    }
-    
-    // Timers print automatically when destroyed
-}
-```
+## Why This Setup Rocks
 
-### Batch Testing
-```bash
-# Test multiple problems
-for problem in A B C D; do
-    echo "Testing $problem..."
-    make test-only PROBLEM=$problem
-done
-```
-
-## 🌟 Why This Setup Rocks
-
-### ⚡ **Speed**: 
+### **Speed**: 
 - Fetch and test a problem in under 5 seconds
 - No manual copy-pasting of test cases
 - Instant feedback with detailed error analysis
 
-### 🎯 **Accuracy**: 
+### **Accuracy**: 
 - Exact time limit enforcement from problem metadata  
 - Precise output comparison with whitespace handling
 - Catches edge cases other setups miss
 
-### 🔧 **Flexibility**:
-- Works with any Codeforces contest (regular/gym/problemset)
+### **Flexibility**:
+- Works with any Codeforces contest (contest/gym/problemset)
 - Supports custom test cases
 - Cross-platform compatibility
 
-### 🚀 **Productivity**:
+### **Productivity**:
 - Focus on algorithm, not setup
 - Visual debugging with colored output
 - Automated build optimization
 
-## 🛠️ Setup Requirements
+## Setup Requirements
 
 ```bash
 # Required tools
@@ -224,4 +222,4 @@ With this setup, you can:
 
 ---
 
-*"Competitive programming is about solving problems, not fighting tools. This setup gets you there faster."* 🏆
+*"Competitive programming is about solving problems, not fighting tools. This setup gets you there faster."*

@@ -5,31 +5,28 @@ import os
 import re
 import json
 
-def detectContestType(contestId: str) -> str:
-    """Auto-detect contest type based on contest ID patterns"""
-    try:
-        contestNum = int(contestId)
-        if contestNum >= 100000:  # Gym contests
-            return "gym"
-        elif contestNum >= 1:     # Regular contests
-            return "contest"
-    except:
-        pass
-    
-    # Default fallback
-    return "contest"
+# ANSI color codes (work in Windows Terminal, Git Bash, but not old cmd)
+try:
+    # Enable ANSI colors on Windows 10+
+    os.system('')
+    GREEN = '\033[0;32m'
+    RED = '\033[0;31m'
+    YELLOW = '\033[1;33m'
+    BLUE = '\033[0;34m'
+    RESET = '\033[0m'
+except:
+    GREEN = RED = YELLOW = BLUE =  RESET = ''
 
 def fetchTests(typeParam:str, contestId: str, problemLetter: str):
     """Fetch sample tests from Codeforces problem page using only built-in modules."""
-    # Auto-detect if type is not specified properly
-    if typeParam.lower() not in ['contest', 'gym', 'problemset']:
-        typeParam = detectContestType(contestId)
-        print(f"🔄 Auto-detected contest type: {typeParam}")
     typeParam = typeParam.lower()
     problemLetter = problemLetter.upper()
-    url = f"https://codeforces.com/{typeParam}/{contestId}/problem/{problemLetter}"
+    if(typeParam == "problemset"):
+        url = f"https://codeforces.com/{typeParam}/problem/{contestId}/{problemLetter}"
+    else:
+        url = f"https://codeforces.com/{typeParam}/{contestId}/problem/{problemLetter}"
 
-    print(f"Fetching from: {url}")
+    print(f"{YELLOW}Fetching{RESET} from: {url}")
     
     try:
         # Create request with headers
@@ -47,25 +44,25 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
             
         # Error detection
         if "404" in html or "Problem not found" in html:
-            print(f"❌ Problem {contestId}{problemLetter} not found!")
+            print(f"{RED}ERROR{RESET}: Problem {contestId}{problemLetter} not found!")
             return False
         elif "Contest not found" in html:
-            print(f"❌ Contest {contestId} not found or not public!")
-            print("💡 Try: gym contest, check contest ID, or wait if contest is running")
+            print(f"{RED}ERROR{RESET}: Contest {contestId} not found or not public!")
+            print("Try: gym contest, check contest ID, or wait if contest is running")
             return False  
         elif not re.search(r'<div class="(input|sample-test)"', html):
-            print(f"❌ Problem {contestId}{problemLetter} found but has no sample tests!")
-            print("💡 This might be an output-only or interactive problem")
+            print(f"{RED}ERROR{RESET}: Problem {contestId}{problemLetter} found but has no sample tests!")
+            print("This might be an output-only or interactive problem")
             return False
             
     except urllib.error.HTTPError as e:
-        print(f"❌ HTTP error {e.code}: {e.reason}")
+        print(f"{RED}ERROR{RESET}: HTTP error {e.code}: {e.reason}")
         return False
     except urllib.error.URLError as e:
-        print(f"❌ Connection error: {e.reason}")
+        print(f"{RED}ERROR{RESET}: Connection error: {e.reason}")
         return False
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"{RED}ERROR{RESET}: Unexpected error: {e}")
         return False
 
     try:
@@ -114,7 +111,7 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
         outputs = [cleanText(out) for out in outputs]
         timeLimit = cleanText(timeLimit[0])
         if not inputs or not outputs:
-            print("❌ No sample tests found!")
+            print("{RED}ERROR{RESET}: No sample tests found!")
             print("This could mean:")
             print("  - Wrong contest ID or problem letter")
             print("  - Problem doesn't have sample tests")
@@ -127,7 +124,7 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
             return False
             
         if len(inputs) != len(outputs):
-            print(f"⚠️  Warning: Found {len(inputs)} inputs but {len(outputs)} outputs")
+            print(f"{YELLOW}Warning{RESET}: Found {len(inputs)} inputs but {len(outputs)} outputs")
             minCount = min(len(inputs), len(outputs))
             inputs = inputs[:minCount]
             outputs = outputs[:minCount]
@@ -155,18 +152,18 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
         with open(metadataFile, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
         
-        print(f"✅ Downloaded {len(inputs)} sample tests for {type} {contestId} problem {problemLetter}")
-        print(f"   ⏱️  Time limit: {timeLimit}")
+        print(f"{GREEN}Downloaded{RESET} {len(inputs)} sample tests for {type} {contestId} problem {problemLetter}")
+        print(f"   Time limit: {timeLimit}")
         
         # Show what we downloaded
         for i in range(1, len(inputs) + 1):
-            print(f"   📁 {problemLetter}{i}.in, {problemLetter}{i}.out")
-        print(f"   📄 {problemLetter}_metadata.json")
+            print(f"   {problemLetter}{i}.in, {problemLetter}{i}.out")
+        print(f"   {problemLetter}_metadata.json")
             
         return True
         
     except Exception as e:
-        print(f"❌ Error parsing HTML: {e}")
+        print(f"{RED}ERROR{RESET}: Error parsing HTML: {e}")
         return False
 
 def main():
@@ -181,11 +178,11 @@ def main():
     problemLetter = sys.argv[3].strip().upper()
     
     if not contestId.isdigit():
-        print("❌ Contest ID must be a number")
+        print("{RED}ERROR{RESET}: INVALID ID: Contest ID must be a number")
         sys.exit(1)
         
     if len(problemLetter) != 1 or not problemLetter.isalpha():
-        print("❌ Problem letter must be a single letter (A, B, C, etc.)")
+        print("{RED}ERROR{RESET}: INVALID PROBLEM LETTER: Problem letter must be a single letter (A, B, C, etc.)")
         sys.exit(1)
     
     success = fetchTests(type, contestId, problemLetter)

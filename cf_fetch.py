@@ -31,7 +31,18 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
     try:
         # Create request with headers
         req = urllib.request.Request(url)
-        req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+        req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7')
+        req.add_header('Accept-Language', 'en-US,en;q=0.9')
+        req.add_header('Connection', 'keep-alive')
+        req.add_header('Upgrade-Insecure-Requests', '1')
+        req.add_header('Sec-Fetch-Dest', 'document')
+        req.add_header('Sec-Fetch-Mode', 'navigate')
+        req.add_header('Sec-Fetch-Site', 'none')
+        req.add_header('Sec-Fetch-User', '?1')
+        req.add_header('Cache-Control', 'max-age=0')
+        req.add_header('DNT', '1')
+        req.add_header('Referer', 'https://codeforces.com/')
         
         # Create SSL context that doesn't verify certificates (for problematic systems)
         import ssl

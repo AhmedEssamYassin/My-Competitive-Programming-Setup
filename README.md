@@ -31,7 +31,7 @@ A powerful, automated toolkit for competitive programming that streamlines your 
 
 | File | Purpose | Key Features |
 |------|---------|--------------|
-| `MakeFile` | Build automation & workflow management | Cross-platform, contest fetching, testing pipeline |
+| `Makefile` | Build automation & workflow management | Cross-platform, contest fetching, testing pipeline |
 | `cf_fetch.py` | Codeforces sample test downloader | Auto-detection, HTML parsing, metadata extraction |
 | `run_tests.py` | Test runner with advanced verification | Timeout handling, detailed diffs, color output |
 | `debug.cpp` | Advanced debugging template | STL container printing, timers, colored output |
@@ -43,19 +43,19 @@ A powerful, automated toolkit for competitive programming that streamlines your 
 
 ```bash
 # Fetch problem and run tests (most used!)
-make -f makefile test CONTEST=1789 PROBLEM=C
+make -f Makefile test CONTEST=1789 PROBLEM=C
 
 # For gym contests
-make -f makefile test GYM=104114 PROBLEM=A
+make -f Makefile test GYM=104114 PROBLEM=A
 
 # Test existing downloaded samples
-make -f makefile test-only PROBLEM=B
+make -f Makefile test-only PROBLEM=B
 
 # Compile and run with input.txt
-make -f makefile run
+make -f Makefile run
 
 # Debug build with full error checking
-make -f makefile debug
+make -f Makefile debug
 ```
 
 ## Powerful Features in Action
@@ -74,7 +74,7 @@ C:\Users\(username)\AppData\Roaming\Code\User\snippets
 
 ### 2. **Intelligent Problem Fetching**
 ```bash
-make -f makefile fetch CONTEST=2139 PROBLEM=B
+make -f Makefile fetch CONTEST=2139 PROBLEM=B
 ```
 **What happens:**
 - 🌐 Fetches from `https://codeforces.com/contest/2139/problem/B`
@@ -84,7 +84,7 @@ make -f makefile fetch CONTEST=2139 PROBLEM=B
 
 ### 3. **Advanced Test Runner**
 ```bash
-make -f makefile test-only PROBLEM=B
+make -f Makefile test-only PROBLEM=B
 ```
 **Output Example:**
 ```
@@ -164,10 +164,10 @@ TIME_BLOCK ("sorting")
 ```bash
 # 1. Write your solution in Code.cpp
 # 2. Fetch and Test
-make -f makefile test CONTEST=1847 PROBLEM=D
+make -f Makefile test CONTEST=1847 PROBLEM=D
 
 # 3. For subsequences testing (no need to fetch again)
-make -f makefile test-only PROBLEM=D
+make -f Makefile test-only PROBLEM=D
 
 # 5. Submit when all tests pass!
 ```

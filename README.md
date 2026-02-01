@@ -112,7 +112,7 @@ This debug template is mainly by: [Anshul_Johri](https://codeforces.com/profile/
 Include `debug.cpp` in your solution:
 
 ```cpp
-#ifndef ONLINE_JUDGE
+#ifdef LOCAL
 #include "debug.cpp"
 #define TIME_BLOCK(name)    \
 	if (bool _once = false) \

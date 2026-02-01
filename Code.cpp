@@ -3,7 +3,7 @@ Author: Ahmed Yassin
 Created: 2026-01-07 23:36:09
 */
 #include <bits/stdc++.h>
-#ifndef ONLINE_JUDGE
+#ifdef LOCAL
 #include "debug.cpp"
 #define TIME_BLOCK(name)    \
 	if (bool _once = false) \
@@ -24,10 +24,10 @@ int main()
 {
 	ios_base::sync_with_stdio(false);
 	cin.tie(nullptr);
-#ifndef ONLINE_JUDGE
+#ifdef LOCAL
 	// freopen("input.txt", "r", stdin);
 	freopen("Output.txt", "w", stdout);
-#endif // ONLINE_JUDGE
+#endif
 	int t = 1;
 	// cin >> t;
 	while (t--)

@@ -19,7 +19,7 @@ namespace __DEBUG_UTIL__
         LabeledTimer(const string &n) : name(n), start(chrono::high_resolution_clock::now()) {}
         ~LabeledTimer()
         {
-#ifndef ONLINE_JUDGE
+#ifdef LOCAL
             auto end = chrono::high_resolution_clock::now();
             chrono::duration<long double> elapsed = (end - start);
             cerr << outer << "[TIMER] " << varName << name << outer
@@ -211,7 +211,7 @@ namespace __DEBUG_UTIL__
                  << white;
     }
 }
-#ifndef ONLINE_JUDGE
+#ifdef LOCAL
 #define debug(...) std::cerr << __DEBUG_UTIL__::outer << __LINE__ << ": [", __DEBUG_UTIL__::printer(#__VA_ARGS__, __VA_ARGS__)
 #define debugArr(...) std::cerr << __DEBUG_UTIL__::outer << __LINE__ << ": [", __DEBUG_UTIL__::printerArr(#__VA_ARGS__, __VA_ARGS__)
 #else

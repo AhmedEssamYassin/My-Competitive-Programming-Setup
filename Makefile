@@ -8,7 +8,7 @@ RESET := \033[0m
 # Variables
 CXX := g++
 PYTHON := python3
-CXXFLAGS := -std=c++2b -O3
+CXXFLAGS := -std=c++2b -O3 -DLOCAL
 TARGET := Code
 SRC := Code.cpp
 

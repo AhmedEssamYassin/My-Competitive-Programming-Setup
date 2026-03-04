@@ -1,5 +1,3 @@
-import urllib.request
-import urllib.error
 import sys
 import os
 import re
@@ -18,7 +16,7 @@ except:
     GREEN = RED = YELLOW = BLUE =  RESET = ''
 
 def fetchTests(typeParam:str, contestId: str, problemLetter: str):
-    """Fetch sample tests from Codeforces problem page using only built-in modules."""
+    """Fetch sample tests from Codeforces problem page using Scrapling."""
     typeParam = typeParam.lower()
     problemLetter = problemLetter.upper()
     if(typeParam == "problemset"):
@@ -29,29 +27,18 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
     print(f"{YELLOW}Fetching{RESET} from: {url}")
     
     try:
-        # Create request with headers
-        req = urllib.request.Request(url)
-        req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-        req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7')
-        req.add_header('Accept-Language', 'en-US,en;q=0.9')
-        req.add_header('Connection', 'keep-alive')
-        req.add_header('Upgrade-Insecure-Requests', '1')
-        req.add_header('Sec-Fetch-Dest', 'document')
-        req.add_header('Sec-Fetch-Mode', 'navigate')
-        req.add_header('Sec-Fetch-Site', 'none')
-        req.add_header('Sec-Fetch-User', '?1')
-        req.add_header('Cache-Control', 'max-age=0')
-        req.add_header('DNT', '1')
-        req.add_header('Referer', 'https://codeforces.com/')
+        from scrapling.fetchers import StealthyFetcher
+    except ImportError:
+        print(f"{RED}ERROR{RESET}: Scrapling library not found.")
+        print("Please install it by running: pip install \"scrapling[all]\"")
+        return False
         
-        # Create SSL context that doesn't verify certificates (for problematic systems)
-        import ssl
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+    try:
+        # Use Scrapling's StealthyFetcher to bypass Cloudflare and 403 errors
+        page = StealthyFetcher.fetch(url, headless=True)
         
-        with urllib.request.urlopen(req, timeout=10, context=ctx) as response:
-            html = response.read().decode('utf-8')
+        # Get the raw HTML content
+        html = getattr(page, 'html_content', getattr(page, 'html', str(page)))
             
         # Error detection
         if "404" in html or "Problem not found" in html:
@@ -59,21 +46,21 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
             return False
         elif "Contest not found" in html:
             print(f"{RED}ERROR{RESET}: Contest {contestId} not found or not public!")
-            print("Try: gym contest, check contest ID, or wait if contest is running")
             return False  
+        # Cloudflare might still show a challenge page
+        elif "cf-browser-verification" in html or "Just a moment..." in html:
+            print(f"{RED}ERROR{RESET}: Blocked by Cloudflare challenge page!")
+            return False
         elif not re.search(r'<div class="(input|sample-test)"', html):
             print(f"{RED}ERROR{RESET}: Problem {contestId}{problemLetter} found but has no sample tests!")
             print("This might be an output-only or interactive problem")
+            # Save to debug file to see what Scrapling actually saw
+            with open(f"debug_{contestId}_{problemLetter}.html", "w", encoding="utf-8") as f:
+                f.write(html)
             return False
             
-    except urllib.error.HTTPError as e:
-        print(f"{RED}ERROR{RESET}: HTTP error {e.code}: {e.reason}")
-        return False
-    except urllib.error.URLError as e:
-        print(f"{RED}ERROR{RESET}: Connection error: {e.reason}")
-        return False
     except Exception as e:
-        print(f"{RED}ERROR{RESET}: Unexpected error: {e}")
+        print(f"{RED}ERROR{RESET}: Unexpected error while fetching: {e}")
         return False
 
     try:
@@ -120,9 +107,10 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
         
         inputs = [cleanText(inp) for inp in inputs]
         outputs = [cleanText(out) for out in outputs]
-        timeLimit = cleanText(timeLimit[0])
+        timeLimit = cleanText(timeLimit[0]) if timeLimit else "Unknown"
+        
         if not inputs or not outputs:
-            print("{RED}ERROR{RESET}: No sample tests found!")
+            print(f"{RED}ERROR{RESET}: No sample tests found!")
             print("This could mean:")
             print("  - Wrong contest ID or problem letter")
             print("  - Problem doesn't have sample tests")
@@ -163,7 +151,7 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
         with open(metadataFile, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
         
-        print(f"{GREEN}Downloaded{RESET} {len(inputs)} sample tests for {type} {contestId} problem {problemLetter}")
+        print(f"{GREEN}Downloaded{RESET} {len(inputs)} sample tests for {typeParam} {contestId} problem {problemLetter}")
         print(f"   Time limit: {timeLimit}")
         
         # Show what we downloaded
@@ -178,25 +166,24 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
         return False
 
 def main():
-    # print(len(sys.argv))
     if len(sys.argv) != 4:
-        print("Usage: python3 cf_fetch.py <type> <contestId> <problemLetter>")
-        print("Example: python3 cf_fetch.py 2139 B")
+        print("Usage: python cf_fetch.py <type> <contestId> <problemLetter>")
+        print("Example: python cf_fetch.py contest 2139 B")
         sys.exit(1)
-    # print(sys.argv)
-    type = sys.argv[1].strip()
+        
+    typeParam = sys.argv[1].strip()
     contestId = sys.argv[2].strip()
     problemLetter = sys.argv[3].strip().upper()
     
     if not contestId.isdigit():
-        print("{RED}ERROR{RESET}: INVALID ID: Contest ID must be a number")
+        print(f"{RED}ERROR{RESET}: INVALID ID: Contest ID must be a number")
         sys.exit(1)
         
     if len(problemLetter) != 1 or not problemLetter.isalpha():
-        print("{RED}ERROR{RESET}: INVALID PROBLEM LETTER: Problem letter must be a single letter (A, B, C, etc.)")
+        print(f"{RED}ERROR{RESET}: INVALID PROBLEM LETTER: Problem letter must be a single letter (A, B, C, etc.)")
         sys.exit(1)
     
-    success = fetchTests(type, contestId, problemLetter)
+    success = fetchTests(typeParam, contestId, problemLetter)
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":

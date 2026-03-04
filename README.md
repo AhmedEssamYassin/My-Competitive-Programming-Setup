@@ -114,16 +114,16 @@ Include `debug.cpp` in your solution:
 ```cpp
 #ifdef LOCAL
 #include "debug.cpp"
-#define TIME_BLOCK(name)    \
+#define TIME_BLOCK(name, t) \
 	if (bool _once = false) \
 	{                       \
 	}                       \
 	else                    \
-		for (__DEBUG_UTIL__::LabeledTimer _t(name); !_once; _once = true)
+		for (__DEBUG_UTIL__::LabeledTimer _t(name, t); !_once; _once = true)
 #else
 #define debug(...)
 #define debugArr(...)
-#define TIME_BLOCK(name) if (true)
+#define TIME_BLOCK(name, t) if (true)
 #endif // Debugging locally
 ```
 
@@ -143,7 +143,7 @@ debug(arr, mp);
 
 ### Performance Testing
 ```cpp
-TIME_BLOCK ("sorting")
+TIME_BLOCK ("sorting", 1)
 {
     sort(arr.begin(), arr.end());
 }

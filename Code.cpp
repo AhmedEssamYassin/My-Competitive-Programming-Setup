@@ -5,16 +5,16 @@ Created: 2026-01-07 23:36:09
 #include <bits/stdc++.h>
 #ifdef LOCAL
 #include "debug.cpp"
-#define TIME_BLOCK(name)    \
+#define TIME_BLOCK(name, t) \
 	if (bool _once = false) \
 	{                       \
 	}                       \
 	else                    \
-		for (__DEBUG_UTIL__::LabeledTimer _t(name); !_once; _once = true)
+		for (__DEBUG_UTIL__::LabeledTimer _t(name, t); !_once; _once = true)
 #else
 #define debug(...)
 #define debugArr(...)
-#define TIME_BLOCK(name) if (true)
+#define TIME_BLOCK(name, t) if (true)
 #endif // Debugging locally
 using namespace std;
 #define ll long long int

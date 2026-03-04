@@ -15,8 +15,11 @@ namespace __DEBUG_UTIL__
     struct LabeledTimer
     {
         string name;
+        long double timeLimit;
         chrono::time_point<chrono::high_resolution_clock> start;
-        LabeledTimer(const string &n) : name(n), start(chrono::high_resolution_clock::now()) {}
+
+        LabeledTimer(const string &n, long double tl) : name(n), timeLimit(tl), start(chrono::high_resolution_clock::now()) {}
+
         ~LabeledTimer()
         {
 #ifdef LOCAL
@@ -24,7 +27,12 @@ namespace __DEBUG_UTIL__
             chrono::duration<long double> elapsed = (end - start);
             cerr << outer << "[TIMER] " << varName << name << outer
                  << " took: " << varValue << fixed << elapsed.count()
-                 << " s" << white << "\n";
+                 << " s" << white;
+
+            if (elapsed.count() > timeLimit)
+                cerr << " \033[1;31m[WARNING: Exceeded TL of " << timeLimit << " s!]\033[0;m";
+
+            cerr << "\n";
 #endif
         }
     };

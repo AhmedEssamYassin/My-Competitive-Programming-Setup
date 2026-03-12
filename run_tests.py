@@ -26,17 +26,25 @@ def loadTimeLimit(problem):
         if os.path.exists(metadataFile):
             with open(metadataFile, 'r', encoding='utf-8') as f:
                 metadata = json.load(f)
+            
             timeLimit = metadata.get('timeLimit', defaultTimeout)
+            
+            if timeLimit == "Unknown":
+                print(f"{YELLOW}Time limit unknown, using default timeout: {defaultTimeout}s{RESET}")
+                return defaultTimeout
+                
             # Ensure it's a number
-            timeLimit = float(timeLimit.split(" ", 1)[0])
-            print(f"{BLUE}Using time limit: {timeLimit} seconds (from {metadataFile}){RESET}")
-            return timeLimit
+            timeLimitStr = str(timeLimit).split(" ", 1)[0]
+            parsedLimit = float(timeLimitStr)
+            print(f"{BLUE}Using time limit: {parsedLimit} seconds (from {metadataFile}){RESET}")
+            return parsedLimit
         else:
             print(f"{YELLOW}No metadata file found ({metadataFile}), using default timeout: {defaultTimeout}s{RESET}")
-            return float(defaultTimeout)
+            return defaultTimeout
+            
     except Exception as e:
-        print(f"{YELLOW}Error reading metadata file: {e}, using default timeout: {defaultTimeout}s{RESET}")
-        return float(defaultTimeout)
+        print(f"{RED}Error reading metadata file: {e}, using default timeout: {defaultTimeout}s{RESET}")
+        return defaultTimeout
     
 def runTest(executable, inputFile, expectedOutputFile, timeout = 6):
     """Run a single test case and return (passed, message)"""

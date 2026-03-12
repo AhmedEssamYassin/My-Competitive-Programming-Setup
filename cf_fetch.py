@@ -33,30 +33,35 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
         print("Please install it by running: pip install \"scrapling[all]\"")
         return False
         
-    try:
+    try:    
         # Use Scrapling's StealthyFetcher to bypass Cloudflare and 403 errors
         page = StealthyFetcher.fetch(url, headless=True)
         
-        # Get the raw HTML content
-        html = getattr(page, 'html_content', getattr(page, 'html', str(page)))
+        # 1. Extract the clean, visible text (ignores HTML tags/scripts)
+        pageText = getattr(page, 'text', "")
+        
+        # 2. Extract the page Title securely using standard .css()
+        titleNodes = page.css("title")
+        title = titleNodes[0].text if titleNodes else ""
             
-        # Error detection
-        if "404" in html or "Problem not found" in html:
+        # Check title and visible text (Soft 404s)
+        if "Error" in title or "No such problem" in pageText or "Problem not found" in pageText:
             print(f"{RED}ERROR{RESET}: Problem {contestId}{problemLetter} not found!")
             return False
-        elif "Contest not found" in html:
+            
+        elif "Contest not found" in pageText:
             print(f"{RED}ERROR{RESET}: Contest {contestId} not found or not public!")
-            return False  
+            return False 
+             
         # Cloudflare might still show a challenge page
-        elif "cf-browser-verification" in html or "Just a moment..." in html:
+        elif "Just a moment" in title or "cf-browser-verification" in pageText:
             print(f"{RED}ERROR{RESET}: Blocked by Cloudflare challenge page!")
             return False
-        elif not re.search(r'<div class="(input|sample-test)"', html):
+            
+        # Use Scrapling's CSS selector to check if test cases exist
+        elif not page.css(".sample-test") and not page.css(".input"):
             print(f"{RED}ERROR{RESET}: Problem {contestId}{problemLetter} found but has no sample tests!")
             print("This might be an output-only or interactive problem")
-            # Save to debug file to see what Scrapling actually saw
-            with open(f"debug_{contestId}_{problemLetter}.html", "w", encoding="utf-8") as f:
-                f.write(html)
             return False
             
     except Exception as e:
@@ -64,50 +69,37 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
         return False
 
     try:
-        # Extract sample inputs and outputs using regex
-        # Look for sample test blocks
-        inputPattern = r'<div class="input">.*?<pre[^>]*>(.*?)</pre>'
-        outputPattern = r'<div class="output">.*?<pre[^>]*>(.*?)</pre>'
-        timePattern = r'<div class="time-limit"[^>]*>.*?(\d+(?:\.\d+)?\s*seconds?)'
-        # Alternative patterns for different layouts
-        altInputPattern = r'<div class="sample-test">.*?<div class="input">.*?<pre[^>]*>(.*?)</pre>'
-        altOutputPattern = r'<div class="sample-test">.*?<div class="output">.*?<pre[^>]*>(.*?)</pre>'
+        # 1. Grab the <pre> blocks inside the input/output divs directly using CSS
+        inputNodes = page.css(".input pre")
+        outputNodes = page.css(".output pre")
         
-        inputs = []
-        outputs = []
-        
-        # Try main pattern first
-        inputs = re.findall(inputPattern, html, re.DOTALL)
-        outputs = re.findall(outputPattern, html, re.DOTALL)
-        timeLimit = re.findall(timePattern,html,re.DOTALL)
-        # If that didn't work, try alternative pattern
-        if not inputs or not outputs:
-            inputs = re.findall(altInputPattern, html, re.DOTALL)
-            outputs = re.findall(altOutputPattern, html, re.DOTALL)
-        
-        # Clean up HTML entities and tags
-        def cleanText(text: str) -> str:
-            # Decode common HTML entities
-            text = text.replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
-            text = text.replace('&quot;', '"').replace('&#39;', "'")
-            text = text.replace('&nbsp;', ' ')
-
-            # Convert <br> tags to newlines
-            text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+        # Helper to safely clean Codeforces <pre> blocks
+        def extractTestText(node) -> str:
+            # Get the raw HTML of just this small <pre> block
+            rawHtml = node.html_content
             
-            # Convert closing </div> tags to newlines (this is the key fix!)
+            # Codeforces sometimes uses <br> or <div class="test-example-line"> for newlines inside <pre>
+            text = re.sub(r'<br\s*/?>', '\n', rawHtml, flags=re.IGNORECASE)
             text = re.sub(r'</div>', '\n', text, flags=re.IGNORECASE)
+            text = re.sub(r'<[^>]+>', '', text) # Strip remaining tags
             
-            # Remove all other HTML tags
-            text = re.sub(r'<[^>]+>', '', text)
-
-            # Return exactly as-is (preserve spacing and newlines)
+            # Scrapling usually handles entities, but just to be safe:
+            text = text.replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
+            text = text.replace('&quot;', '"').replace('&#39;', "'").replace('&nbsp;', ' ')
+            
             return text.strip()
 
+        # Extract the text
+        inputs = [extractTestText(node) for node in inputNodes]
+        outputs = [extractTestText(node) for node in outputNodes]
         
-        inputs = [cleanText(inp) for inp in inputs]
-        outputs = [cleanText(out) for out in outputs]
-        timeLimit = cleanText(timeLimit[0]) if timeLimit else "Unknown"
+        # Extract Time Limit dynamically using raw HTML
+        timeLimit = "Unknown"
+        rawPageHtml = getattr(page, 'html_content', getattr(page, 'html', str(page)))        
+        # Match the time limit div and grab the number right before the word 'second'
+        timeMatch = re.search(r'<div class="time-limit"[^>]*>.*?(\d+(?:\.\d+)?)\s*second', rawPageHtml, re.DOTALL | re.IGNORECASE)
+        if timeMatch:
+            timeLimit = timeMatch.group(1)
         
         if not inputs or not outputs:
             print(f"{RED}ERROR{RESET}: No sample tests found!")
@@ -118,7 +110,7 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
             
             # Debug: save HTML to file for inspection
             with open(f"debug_{contestId}_{problemLetter}.html", "w", encoding="utf-8") as f:
-                f.write(html)
+                f.write(getattr(page, 'html_content', getattr(page, 'html', str(page))))
             print(f"  - HTML saved to debug_{contestId}_{problemLetter}.html for inspection")
             return False
             

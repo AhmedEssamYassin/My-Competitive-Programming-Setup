@@ -1,6 +1,6 @@
 /*
 Author: Ahmed Yassin
-Created: 2026-01-07 23:36:09
+Created: 2026-03-12 03:43:20
 */
 #include <bits/stdc++.h>
 #ifdef LOCAL
@@ -44,6 +44,7 @@ int main()
 				cnt++, cur = 0, fill(seen.begin(), seen.end(), 0), seen[0] = 1;
 			else
 				seen[cur] = 1;
+			debug(seen);
 		}
 		cout << cnt << endl;
 	}

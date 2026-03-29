@@ -12,8 +12,8 @@ Created: 2026-03-12 03:43:20
 	else                    \
 		for (__DEBUG_UTIL__::LabeledTimer _t(name, t); !_once; _once = true)
 #else
-#define debug(...)
-#define debugArr(...)
+#define debug(...) void(0)
+#define debugArr(...) void(0)
 #define TIME_BLOCK(name, t) if (true)
 #endif // Debugging locally
 using namespace std;
@@ -25,7 +25,7 @@ int main()
 	ios_base::sync_with_stdio(false);
 	cin.tie(nullptr);
 #ifdef LOCAL
-	// freopen("input.txt", "r", stdin);
+	freopen("input.txt", "r", stdin);
 	freopen("Output.txt", "w", stdout);
 #endif
 	int t = 1;

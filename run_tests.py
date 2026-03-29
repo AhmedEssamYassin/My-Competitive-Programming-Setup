@@ -57,6 +57,21 @@ def runTest(executable, inputFile, expectedOutputFile, timeout = 6):
         with open(expectedOutputFile, 'r', encoding='utf-8') as f:
             expectedOutput = f.read().strip()
         
+        # Write test data to input.txt for C++ freopen compatibility
+        try:
+            with open("input.txt", "w", encoding='utf-8') as f:
+                f.write(inputData)
+        except Exception:
+            pass
+        
+        # Clean up any existing Output.txt to prevent reading stale output
+        outputFilePath = "Output.txt"
+        if os.path.exists(outputFilePath):
+            try:
+                os.remove(outputFilePath)
+            except Exception:
+                pass
+
         # Run the program
         try:
             result = subprocess.run(
@@ -83,11 +98,7 @@ def runTest(executable, inputFile, expectedOutputFile, timeout = 6):
         if result.returncode != 0:
             return False, f"RUNTIME ERROR (exit code {result.returncode})"
         
-        # Clean up any existing Output.txt
-        outputFilePath = "Output.txt"
-
         # Read actual output from Output.txt
-        outputFilePath = "Output.txt"
         actualOutput = ""
         if os.path.exists(outputFilePath):
             try:
@@ -95,11 +106,9 @@ def runTest(executable, inputFile, expectedOutputFile, timeout = 6):
                     actualOutput = f.read().strip()
             except Exception as e:
                 return False, f"ERROR READING OUTPUT FILE: {e}"        
-        elif result.stdout.strip():
+        else:
             # Fallback to stdout for local testing
             actualOutput = result.stdout.strip()
-        else:
-            return False, "NO OUTPUT GENERATED: Neither Output.txt nor stdout contains output"    
         
         # Compare outputs (ignore trailing whitespace)
         expectedLines = [line.rstrip() for line in expectedOutput.splitlines()]

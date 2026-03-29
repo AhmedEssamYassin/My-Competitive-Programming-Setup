@@ -6,7 +6,7 @@
 namespace __DEBUG_UTIL__
 {
     using namespace std;
-    bool I_want_colored_output = true; /* ONLY WORKS WITH TERMINAL */
+    inline bool I_want_colored_output = true; /* ONLY WORKS WITH TERMINAL */
     inline string white = I_want_colored_output ? "\033[0;m" : "";
     inline string outer = I_want_colored_output ? "\033[0;31m" : "";    // red
     inline string varName = I_want_colored_output ? "\033[1;34m" : "";  // blue
@@ -52,6 +52,27 @@ namespace __DEBUG_UTIL__
     void print(float x) { cerr << fixed << setprecision(9) << x; }
     void print(double x) { cerr << fixed << setprecision(17) << x; }
     void print(long double x) { cerr << fixed << setprecision(21) << x; }
+    void print(const void* x) { cerr << x; }
+    void print(__int128 x) {
+        if (x < 0) { cerr << '-'; x = -x; }
+        if (x == 0) { cerr << '0'; return; }
+        string s;
+        while (x) { s += (char)(x % 10 + '0'); x /= 10; }
+        reverse(s.begin(), s.end());
+        cerr << s;
+    }
+    void print(unsigned __int128 x) {
+        if (x == 0) { cerr << '0'; return; }
+        string s;
+        while (x) { s += (char)(x % 10 + '0'); x /= 10; }
+        reverse(s.begin(), s.end());
+        cerr << s;
+    }
+    #if __cplusplus >= 201703L
+    void print(string_view x) { cerr << '\"' << x << '\"'; }
+    #endif
+    template <typename T>
+    void print(complex<T> x) { cerr << '(' << x.real() << "," << x.imag() << ')'; }
     void print(string x) { cerr << '\"' << x << '\"'; }
     template <size_t N>
     void print(bitset<N> x) { cerr << x; }
@@ -204,10 +225,16 @@ namespace __DEBUG_UTIL__
     {
         size_t ind = 0;
         cerr << varName;
-        for (; names[ind] and names[ind] != ','; ind++)
+        for (size_t bracket = 0; names[ind] and (names[ind] != ',' or bracket != 0); ind++) {
             cerr << names[ind];
-        for (ind++; names[ind] and names[ind] != ','; ind++)
-            ;
+            if (names[ind] == '(' or names[ind] == '<' or names[ind] == '{') bracket++;
+            else if (names[ind] == ')' or names[ind] == '>' or names[ind] == '}') bracket--;
+        }
+        if (names[ind] == ',') ind++;
+        for (size_t bracket = 0; names[ind] and (names[ind] != ',' or bracket != 0); ind++) {
+            if (names[ind] == '(' or names[ind] == '<' or names[ind] == '{') bracket++;
+            else if (names[ind] == ')' or names[ind] == '>' or names[ind] == '}') bracket--;
+        }
         cerr << outer << " = " << varValue << "{";
         for (size_t i = 0; i < N; i++)
             cerr << (i ? "," : ""), print(arr[i]);
@@ -223,8 +250,8 @@ namespace __DEBUG_UTIL__
 #define debug(...) std::cerr << __DEBUG_UTIL__::outer << __LINE__ << ": [", __DEBUG_UTIL__::printer(#__VA_ARGS__, __VA_ARGS__)
 #define debugArr(...) std::cerr << __DEBUG_UTIL__::outer << __LINE__ << ": [", __DEBUG_UTIL__::printerArr(#__VA_ARGS__, __VA_ARGS__)
 #else
-#define debug(...)
-#define debugArr(...)
+#define debug(...) (void)0
+#define debugArr(...) (void)0
 
 #endif
 #endif

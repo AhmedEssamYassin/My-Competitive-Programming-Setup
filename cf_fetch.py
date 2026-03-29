@@ -171,8 +171,8 @@ def main():
         print(f"{RED}ERROR{RESET}: INVALID ID: Contest ID must be a number")
         sys.exit(1)
         
-    if len(problemLetter) != 1 or not problemLetter.isalpha():
-        print(f"{RED}ERROR{RESET}: INVALID PROBLEM LETTER: Problem letter must be a single letter (A, B, C, etc.)")
+    if len(problemLetter) > 4 or not problemLetter.isalnum():
+        print(f"{RED}ERROR{RESET}: INVALID PROBLEM LETTER: Problem letter must be alphanumeric (1-4 chars like A, B, A1, J2)")
         sys.exit(1)
     
     success = fetchTests(typeParam, contestId, problemLetter)

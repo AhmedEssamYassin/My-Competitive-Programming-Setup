@@ -7,7 +7,12 @@ RESET := \033[0m
 
 # Variables
 CXX := g++
-PYTHON := python # May change, it is machine dependent
+ifeq ($(OS),Windows_NT)
+    # Dynamically detect absolute system Python path and safely quote it to prevent space issues
+    PYTHON ?= "$(shell py -c "import sys; print(sys.executable, end='')" 2>nul || echo python)"
+else
+    PYTHON ?= "$(shell which python3 2>/dev/null || which python 2>/dev/null || echo python3)"
+endif
 CXXFLAGS := -std=c++2b -O3 -DLOCAL
 TARGET := Code
 SRC := Code.cpp

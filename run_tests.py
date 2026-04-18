@@ -1,3 +1,7 @@
+"""
+Test runner for competitive programming.
+Runs compiled C++ executables against sample inputs, checks timeouts, and compares outputs.
+"""
 import sys
 import os
 import subprocess
@@ -49,12 +53,10 @@ def loadTimeLimit(problem):
 def runTest(executable, inputFile, expectedOutputFile, timeout = 6):
     """Run a single test case and return (passed, message)"""
     try:
-        # Read input
-        with open(inputFile, 'r', encoding='utf-8') as f:
+        with open(inputFile, "r", encoding="utf-8") as f:
             inputData = f.read()
         
-        # Read expected output
-        with open(expectedOutputFile, 'r', encoding='utf-8') as f:
+        with open(expectedOutputFile, "r", encoding="utf-8") as f:
             expectedOutput = f.read().strip()
         
         # Write test data to input.txt for C++ freopen compatibility
@@ -72,7 +74,6 @@ def runTest(executable, inputFile, expectedOutputFile, timeout = 6):
             except Exception:
                 pass
 
-        # Run the program
         try:
             result = subprocess.run(
                 [executable], 
@@ -90,7 +91,6 @@ def runTest(executable, inputFile, expectedOutputFile, timeout = 6):
             return False, f"RUNTIME ERROR: {e}"
         
         if result.stderr:
-            # Print the stderr content (debug messages) to the terminal
             sys.stderr.write(f"\n--- {YELLOW}Debug{RESET} Output for {Path(inputFile).stem} ---\n")
             sys.stderr.write(result.stderr)
             sys.stderr.write("--------------------------------------------------------------------------------\n")
@@ -98,7 +98,6 @@ def runTest(executable, inputFile, expectedOutputFile, timeout = 6):
         if result.returncode != 0:
             return False, f"RUNTIME ERROR (exit code {result.returncode})"
         
-        # Read actual output from Output.txt
         actualOutput = ""
         if os.path.exists(outputFilePath):
             try:
@@ -110,14 +109,14 @@ def runTest(executable, inputFile, expectedOutputFile, timeout = 6):
             # Fallback to stdout for local testing
             actualOutput = result.stdout.strip()
         
-        # Compare outputs (ignore trailing whitespace)
         expectedLines = [line.rstrip() for line in expectedOutput.splitlines()]
         actualLines = [line.rstrip() for line in actualOutput.splitlines()]
 
         if expectedLines == actualLines:
             return True, "ACCEPTED"
+        elif expectedOutput.split() == actualOutput.split():
+            return True, "ACCEPTED (Token-based)"
         else:
-            # Format output comparison nicely
             expectedLines = expectedOutput.split('\n')
             actualLines = actualOutput.split('\n')
             

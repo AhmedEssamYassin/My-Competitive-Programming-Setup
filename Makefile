@@ -103,7 +103,13 @@ endif
 clean:
 	@$(PYTHON) -c "print('$(YELLOW)Cleaning...$(RESET)')"
 	$(CLEAN_TEST_FILES)
+	$(CLEAN_TARGET)
+	$(CLEAN_OUTPUT)
 	@$(PYTHON) -c "print('$(GREEN)Clean complete!$(RESET)')"
+
+listen:
+	@$(PYTHON) -c "print('$(YELLOW)Starting Competitive Companion listener on port 10043...$(RESET)')"
+	@$(PYTHON) companion_listen.py
 
 # Contest-style test runner (clean -> fetch -> test)
 test: clean fetch test-only

@@ -78,7 +78,19 @@ To make the snippet work, you must place the `cpp.json` file in your VS Code Use
 C:\Users\(username)\AppData\Roaming\Code\User\snippets
 ```
 
-### 2. **Intelligent Problem Fetching**
+### 2. **Competitive Companion Integration (NEW & Recommended!)**
+
+Bypass Cloudflare entirely and fetch problems instantly using the browser extension:
+
+1. **Install** the [Competitive Companion](https://github.com/jmerle/competitive-companion) extension for your browser.
+2. **Start the listener** in your terminal by running:
+   ```bash
+   make -f Makefile listen
+   ```
+3. **Fetch:** Open any problem on Codeforces (or 20+ other supported sites) and click the **green `+` icon** in your browser's extension bar.
+4. The tests will instantly download to your `tests/` folder! Run your tests normally using `make -f Makefile test-only PROBLEM=...`.
+
+### 3. **Intelligent Problem Fetching (Fallback)**
 ```bash
 make -f Makefile fetch CONTEST=2139 PROBLEM=B
 ```

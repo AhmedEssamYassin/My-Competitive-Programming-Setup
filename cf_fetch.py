@@ -1,7 +1,12 @@
+"""
+Fetches problem sample tests from Codeforces.
+Handles HTML parsing, Cloudflare evasion, and metadata extraction.
+"""
 import sys
 import os
 import re
 import json
+import glob
 
 # ANSI color codes (work in Windows Terminal, Git Bash, but not old cmd)
 try:
@@ -19,7 +24,7 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
     """Fetch sample tests from Codeforces problem page using Scrapling."""
     typeParam = typeParam.lower()
     problemLetter = problemLetter.upper()
-    if(typeParam == "problemset"):
+    if typeParam == "problemset":
         url = f"https://codeforces.com/{typeParam}/problem/{contestId}/{problemLetter}"
     else:
         url = f"https://codeforces.com/{typeParam}/{contestId}/problem/{problemLetter}"
@@ -58,7 +63,6 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
             print(f"{RED}ERROR{RESET}: Blocked by Cloudflare challenge page!")
             return False
             
-        # Use Scrapling's CSS selector to check if test cases exist
         elif not page.css(".sample-test") and not page.css(".input"):
             print(f"{RED}ERROR{RESET}: Problem {contestId}{problemLetter} found but has no sample tests!")
             print("This might be an output-only or interactive problem")
@@ -89,14 +93,11 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
             
             return text.strip()
 
-        # Extract the text
         inputs = [extractTestText(node) for node in inputNodes]
         outputs = [extractTestText(node) for node in outputNodes]
         
-        # Extract Time Limit dynamically using raw HTML
         timeLimit = "Unknown"
-        rawPageHtml = getattr(page, 'html_content', getattr(page, 'html', str(page)))        
-        # Match the time limit div and grab the number right before the word 'second'
+        rawPageHtml = getattr(page, "html_content", getattr(page, "html", str(page)))        
         timeMatch = re.search(r'<div class="time-limit"[^>]*>.*?(\d+(?:\.\d+)?)\s*second', rawPageHtml, re.DOTALL | re.IGNORECASE)
         if timeMatch:
             timeLimit = timeMatch.group(1)
@@ -120,10 +121,15 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
             inputs = inputs[:minCount]
             outputs = outputs[:minCount]
 
-        # Create tests directory
         os.makedirs("tests", exist_ok=True)
         
-        # Write test files
+        # Delete ghost tests
+        for oldFile in glob.glob(f"tests/{problemLetter}*.in") + glob.glob(f"tests/{problemLetter}*.out"):
+            try:
+                os.remove(oldFile)
+            except OSError:
+                pass
+        
         for i, (inp, out) in enumerate(zip(inputs, outputs), 1):
             inputFile = f"tests/{problemLetter}{i}.in"
             outputFile = f"tests/{problemLetter}{i}.out"
@@ -146,7 +152,6 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
         print(f"{GREEN}Downloaded{RESET} {len(inputs)} sample tests for {typeParam} {contestId} problem {problemLetter}")
         print(f"   Time limit: {timeLimit}")
         
-        # Show what we downloaded
         for i in range(1, len(inputs) + 1):
             print(f"   {problemLetter}{i}.in, {problemLetter}{i}.out")
         print(f"   {problemLetter}_metadata.json")

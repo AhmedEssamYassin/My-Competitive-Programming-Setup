@@ -54,6 +54,12 @@ make -f Makefile test-only PROBLEM=B
 # Compile and run with input.txt
 make -f Makefile run
 
+# Compile and run a specific file (overrides Code.cpp)
+make -f Makefile run SRC=B.cpp
+
+# Run tests using a specific file
+make -f Makefile test-only PROBLEM=B SRC=B.cpp
+
 # Debug build with full error checking
 make -f Makefile debug
 ```

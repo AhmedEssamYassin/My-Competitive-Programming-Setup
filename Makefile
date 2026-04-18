@@ -14,8 +14,8 @@ else
     PYTHON ?= "$(shell which python3 2>/dev/null || which python 2>/dev/null || echo python3)"
 endif
 CXXFLAGS := -std=c++2b -O3 -DLOCAL
-TARGET := Code
-SRC := Code.cpp
+SRC ?= Code.cpp
+TARGET ?= $(basename $(SRC))
 
 CONTEST ?=
 GYM ?=

@@ -32,15 +32,15 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
     print(f"{YELLOW}Fetching{RESET} from: {url}")
     
     try:
-        from scrapling.fetchers import StealthyFetcher
+        from scrapling.fetchers import Fetcher, StealthyFetcher
     except ImportError:
         print(f"{RED}ERROR{RESET}: Scrapling library not found.")
         print("Please install it by running: pip install \"scrapling[all]\"")
         return False
         
-    try:    
-        # Use Scrapling's StealthyFetcher to bypass Cloudflare and 403 errors
-        page = StealthyFetcher.fetch(url, headless=True)
+    try:
+        print(f"{BLUE}Attempting fast fetch...{RESET}")
+        page = Fetcher.get(url)
         
         # 1. Extract the clean, visible text (ignores HTML tags/scripts)
         pageText = getattr(page, 'text', "")
@@ -48,6 +48,18 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
         # 2. Extract the page Title securely using standard .css()
         titleNodes = page.css("title")
         title = titleNodes[0].text if titleNodes else ""
+        
+        # Check if fast fetch was blocked by Cloudflare
+        isBlocked = ("Just a moment" in title or 
+                      "cf-browser-verification" in pageText or 
+                      getattr(page, 'status', 200) in (403, 503))
+                      
+        if isBlocked:
+            print(f"{YELLOW}Fast fetch blocked by Cloudflare. Retrying with StealthyFetcher...{RESET}")
+            page = StealthyFetcher.fetch(url, headless=True)
+            pageText = getattr(page, 'text', "")
+            titleNodes = page.css("title")
+            title = titleNodes[0].text if titleNodes else ""
             
         # Check title and visible text (Soft 404s)
         if "Error" in title or "No such problem" in pageText or "Problem not found" in pageText:
@@ -58,7 +70,7 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
             print(f"{RED}ERROR{RESET}: Contest {contestId} not found or not public!")
             return False 
              
-        # Cloudflare might still show a challenge page
+        # Cloudflare might still show a challenge page even after StealthyFetcher
         elif "Just a moment" in title or "cf-browser-verification" in pageText:
             print(f"{RED}ERROR{RESET}: Blocked by Cloudflare challenge page!")
             return False
@@ -69,6 +81,12 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
             return False
             
     except Exception as e:
+        errorMsg = str(e).lower()
+        if "playwright" in errorMsg or "executable doesn't exist" in errorMsg or "chromium" in errorMsg:
+            print(f"\n{YELLOW}Environment Hint:{RESET} If you are running this on a headless Linux server, WSL, or Docker,")
+            print("you likely need to install system dependencies for the headless browser.")
+            print(f"Run this command to fix it: {GREEN}npx playwright install chromium --with-deps{RESET}\n")
+            
         print(f"{RED}ERROR{RESET}: Unexpected error while fetching: {e}")
         return False
 

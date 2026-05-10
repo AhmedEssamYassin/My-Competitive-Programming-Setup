@@ -163,6 +163,10 @@ def main():
         if os.path.exists(executable + '.exe'):
             executable += '.exe'
     
+    # Add ./ prefix on Linux/macOS for local executables
+    if os.name != 'nt' and not executable.startswith(('./', '/')):
+        executable = './' + executable
+    
     # Check if executable exists
     if not os.path.exists(executable):
         print(f"{RED}Error: Executable '{executable}' not found{RESET}")

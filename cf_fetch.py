@@ -32,7 +32,7 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
     print(f"{YELLOW}Fetching{RESET} from: {url}")
     
     try:
-        from scrapling.fetchers import Fetcher, StealthyFetcher
+        from scrapling.fetchers import Fetcher
     except ImportError:
         print(f"{RED}ERROR{RESET}: Scrapling library not found.")
         print("Please install it by running: pip install \"scrapling[all]\"")
@@ -55,11 +55,32 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
                       getattr(page, 'status', 200) in (403, 503))
                       
         if isBlocked:
-            print(f"{YELLOW}Fast fetch blocked by Cloudflare. Retrying with StealthyFetcher...{RESET}")
-            page = StealthyFetcher.fetch(url, headless=True)
-            pageText = getattr(page, 'text', "")
-            titleNodes = page.css("title")
-            title = titleNodes[0].text if titleNodes else ""
+            import sys
+
+            isWindows = sys.platform == "win32"
+            strategy = "StealthyFetcher (Windows)" if isWindows else "curl_cffi (Linux)"
+            print(f"{YELLOW}Fast fetch blocked. Retrying with {strategy}...{RESET}")
+
+            try:
+                if isWindows:
+                    from scrapling.fetchers import StealthyFetcher
+                    page = StealthyFetcher.fetch(url, headless=True)
+                else:
+                    from curl_cffi import requests
+                    from scrapling.parser import Selector
+                    page = Selector(requests.get(url, impersonate="chrome").text)
+
+                pageText = getattr(page, "text", "")
+                title = next((n.text for n in page.css("title")), "")
+
+            except ImportError as e:
+                hint = (
+                    "Ensure playwright/patchright is installed."
+                    if isWindows
+                    else "Please run: pip install curl_cffi."
+                )
+                print(f"{RED}ERROR{RESET}: {hint} Exact error: {e}")
+                return False
             
         # Check title and visible text (Soft 404s)
         if "Error" in title or "No such problem" in pageText or "Problem not found" in pageText:

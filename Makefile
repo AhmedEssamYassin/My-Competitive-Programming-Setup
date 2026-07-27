@@ -8,14 +8,14 @@ RESET := \033[0m
 # Variables
 CXX := g++
 ifeq ($(OS),Windows_NT)
-    # Dynamically detect absolute system Python path and safely quote it to prevent space issues
-    PYTHON ?= "$(shell py -c "import sys; print(sys.executable, end='')" 2>nul || echo python)"
+    # Prioritize venv Python, fallback to system Python
+    PYTHON ?= $(if $(wildcard venv/Scripts/python.exe),"venv/Scripts/python.exe","$(shell py -c "import sys; print(sys.executable, end='')" 2>nul || echo python)")
 else
-    PYTHON ?= "$(shell which python3 2>/dev/null || which python 2>/dev/null || echo python3)"
+    PYTHON ?= $(if $(wildcard venv/bin/python),"venv/bin/python","$(shell which python3 2>/dev/null || which python 2>/dev/null || echo python3)")
 endif
-CXXFLAGS := -std=c++2b -O3 -DLOCAL
-SRC ?= Code.cpp
-TARGET ?= $(basename $(SRC))
+CXXFLAGS := -std=c++2b -O3 -DLOCAL -Iinclude
+SRC ?= src/Code.cpp
+TARGET ?= bin/$(basename $(notdir $(SRC)))
 
 CONTEST ?=
 GYM ?=
@@ -25,13 +25,15 @@ PROBLEM ?=
 ifeq ($(OS),Windows_NT)
     CLEAN_TESTS := @if exist tests rmdir /S /Q tests 2>nul
     CLEAN_TEST_FILES := @if exist tests\*.* del /Q tests\*.* 2>nul
-    CLEAN_TARGET := @if exist $(TARGET).exe del /Q $(TARGET).exe 2>nul
+    CLEAN_TARGET := @if exist bin\*.* del /Q bin\*.* 2>nul
     CLEAN_OUTPUT := @if exist Output.txt del /Q Output.txt 2>nul
+    MKDIR_BIN := @if not exist bin mkdir bin
 else
     CLEAN_TESTS := @rm -rf tests 2>/dev/null || true
     CLEAN_TEST_FILES := @rm -f tests/* 2>/dev/null || true
-    CLEAN_TARGET := @rm -f $(TARGET) 2>/dev/null || true  
+    CLEAN_TARGET := @rm -f bin/* 2>/dev/null || true  
     CLEAN_OUTPUT := @rm -f Output.txt 2>/dev/null || true
+    MKDIR_BIN := @mkdir -p bin
 endif
 
 .PHONY: check-tools
@@ -46,6 +48,7 @@ all: $(TARGET)
 
 # Link and compile
 $(TARGET): $(SRC)
+	$(MKDIR_BIN)
 	@$(PYTHON) -c "print('$(YELLOW)Compiling$(RESET) $(SRC)...')"
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC)
 	@$(PYTHON) -c "print('$(GREEN)Compilation successful!$(RESET)')"
@@ -73,22 +76,22 @@ ifeq ($(PROBLEM),)
 	@$(PYTHON) -c "print('Usage: make fetch CONTEST=2139 PROBLEM=B')"
 	@exit 1
 endif
-	@$(MKDIR)
+	$(MKDIR_BIN)
 ifdef CONTEST
 	@$(PYTHON) -c "print('$(YELLOW)Fetching$(RESET) contest $(CONTEST) problem $(PROBLEM)...')"
-	$(PYTHON) cf_fetch.py contest $(CONTEST) $(PROBLEM)
+	$(PYTHON) scripts/cf_fetch.py contest $(CONTEST) $(PROBLEM)
 endif
 ifdef GYM
 	@$(PYTHON) -c "print('$(YELLOW)Fetching$(RESET) gym $(GYM) problem $(PROBLEM)...')"
-	$(PYTHON) cf_fetch.py gym $(GYM) $(PROBLEM)
+	$(PYTHON) scripts/cf_fetch.py gym $(GYM) $(PROBLEM)
 endif
 ifdef PROBLEMSET
 	@$(PYTHON) -c "print('$(YELLOW)Fetching$(RESET) problemset $(PROBLEMSET) problem $(PROBLEM)...')"
-	$(PYTHON) cf_fetch.py PROBLEMSET $(PROBLEMSET) $(PROBLEM)
+	$(PYTHON) scripts/cf_fetch.py problemset $(PROBLEMSET) $(PROBLEM)
 endif
 
 tests:
-	@$(MKDIR)
+	$(MKDIR_BIN)
 
 # Test runner
 test-only: $(TARGET)
@@ -97,7 +100,7 @@ ifeq ($(PROBLEM),)
 	@$(PYTHON) -c "print('Usage: make test-only PROBLEM=B')"
 	@exit 1
 endif
-	@$(PYTHON) run_tests.py $(PROBLEM) $(TARGET)
+	@$(PYTHON) scripts/run_tests.py $(PROBLEM) $(TARGET)
 
 # Clean test files
 clean:
@@ -109,14 +112,16 @@ clean:
 
 listen:
 	@$(PYTHON) -c "print('$(YELLOW)Starting Competitive Companion listener on port 10043...$(RESET)')"
-	@$(PYTHON) companion_listen.py
+	@$(PYTHON) scripts/companion_listen.py
 
 # Contest-style test runner (clean -> fetch -> test)
 test: clean fetch test-only
 
 # Debug build
 debug:
-	$(CXX) -std=c++2b -g -O0 -Wall -Wextra -DDEBUG -o $(TARGET) $(SRC)
+	$(MKDIR_BIN)
+	$(CXX) -std=c++2b -g -O0 -Wall -Wextra -DDEBUG -DLOCAL -Iinclude \
+	    -fsanitize=address,undefined -fno-omit-frame-pointer -o $(TARGET) $(SRC)
 
 # Simple check
 check: check-tools

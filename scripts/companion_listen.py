@@ -10,18 +10,8 @@ import os
 import glob
 import sys
 import re
-
-# ANSI color codes (work in Windows Terminal, Git Bash, but not old cmd)
-try:
-    # Enable ANSI colors on Windows 10+
-    os.system('')
-    GREEN = '\033[0;32m'
-    RED = '\033[0;31m'
-    YELLOW = '\033[1;33m'
-    BLUE = '\033[0;34m'
-    RESET = '\033[0m'
-except:
-    GREEN = RED = YELLOW = BLUE =  RESET = ''
+import time
+from utils import GREEN, RED, YELLOW, BLUE, RESET
 
 PORT = 10043
 
@@ -29,11 +19,16 @@ class CompanionHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         contentLength = int(self.headers["Content-Length"])
         postData = self.rfile.read(contentLength)
-        data = json.loads(postData)
         
         # Respond immediately to extension
         self.send_response(200)
         self.end_headers()
+
+        try:
+            data = json.loads(postData)
+        except json.JSONDecodeError as e:
+            print(f"{RED}ERROR{RESET}: Invalid JSON payload received: {e}")
+            return
         
         self.processProblem(data)
         
@@ -43,9 +38,9 @@ class CompanionHandler(http.server.BaseHTTPRequestHandler):
         # Extract time limit (Competitive Companion sends ms, we need seconds)
         timeLimitMs = data.get('timeLimit', 'Unknown')
         if isinstance(timeLimitMs, (int, float)):
-            timeLimit = str(timeLimitMs / 1000.0)
+            timeLimit = timeLimitMs / 1000.0  # store as float for clean JSON
         else:
-            timeLimit = str(timeLimitMs)
+            timeLimit = 'Unknown'
         
         problemLetter = None
         url = data.get('url', '')
@@ -54,11 +49,16 @@ class CompanionHandler(http.server.BaseHTTPRequestHandler):
         if 'codeforces.com' in url:
             match = re.search(r'/problem/([A-Z0-9]+)$', url, re.IGNORECASE)
             if match:
-                problemLetter = match.group(1).upper()
+                raw = match.group(1).upper()
+                # Validate: 1-4 alphanumeric chars only
+                if raw.isalnum() and 1 <= len(raw) <= 4:
+                    problemLetter = raw
         
         if not problemLetter:
+            fallback = f"UNKNOWN_{int(time.time())}"
             print(f"{YELLOW}Could not determine problem letter from URL: {url}{RESET}")
-            problemLetter = input(f"{BLUE}Enter problem letter: {RESET}").strip().upper()
+            print(f"{YELLOW}Using auto-generated name: {fallback}{RESET}")
+            problemLetter = fallback
             
         print(f"Problem Letter: {problemLetter}")
         print(f"Time Limit: {timeLimit}")
@@ -104,15 +104,19 @@ class CompanionHandler(http.server.BaseHTTPRequestHandler):
         # Suppress default logging
         pass
 
-def run():
+def startServer():
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("", PORT), CompanionHandler) as httpd:
-        print(f"{GREEN}Listening on port {PORT} for Competitive Companion...{RESET}")
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print(f"\n{YELLOW}Shutting down listener.{RESET}")
-            sys.exit(0)
+    try:
+        with socketserver.TCPServer(("", PORT), CompanionHandler) as httpd:
+            print(f"{GREEN}Listening on port {PORT} for Competitive Companion...{RESET}")
+            try:
+                httpd.serve_forever()
+            except KeyboardInterrupt:
+                print(f"\n{YELLOW}Shutting down listener.{RESET}")
+                sys.exit(0)
+    except OSError:
+        print(f"{RED}ERROR{RESET}: Port {PORT} is already in use. Is another listener running?")
+        sys.exit(1)
 
 if __name__ == '__main__':
-    run()
+    startServer()

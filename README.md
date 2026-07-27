@@ -27,15 +27,16 @@ A powerful, automated toolkit for competitive programming that streamlines your 
 - Automatic dependency management
 - Windows and Linux compatible
 
-## 📁 File Overview
+## File Overview
 
-| File | Purpose | Key Features |
-|------|---------|--------------|
-| `Makefile` | Build automation & workflow management | Cross-platform, contest fetching, testing pipeline |
-| `cf_fetch.py` | Codeforces sample test downloader | Auto-detection, HTML parsing, metadata extraction |
-| `run_tests.py` | Test runner with advanced verification | Timeout handling, detailed diffs, color output |
-| `debug.cpp` | Advanced debugging template | STL container printing, timers, colored output |
-| `cpp.json` | VS Code Snippet | Instant template generation with timestamp & debug setup |
+| File                     | Purpose                                | Key Features                                                    |
+| ------------------------ | -------------------------------------- | --------------------------------------------------------------- |
+| `Makefile`               | Build automation & workflow management | Cross-platform, contest fetching, testing pipeline              |
+| `scripts/cf_fetch.py`    | Codeforces sample test downloader      | Auto-detection, HTML parsing, metadata extraction               |
+| `scripts/run_tests.py`   | Test runner with advanced verification | Timeout handling, detailed diffs, color output, TUI integration |
+| `scripts/interactive.py` | Interactive Shell                      | Dashboard, quick actions, auto tests runner                     |
+| `include/debug.cpp`      | Advanced debugging template            | STL container printing, timers, colored output                  |
+| `templates/cpp.json`     | VS Code Snippet                        | Instant template generation with timestamp & debug setup        |
 
 ## Quick Start
 
@@ -139,8 +140,8 @@ Include `debug.cpp` in your solution:
 	else                    \
 		for (__DEBUG_UTIL__::LabeledTimer _t(name, t); !_once; _once = true)
 #else
-#define debug(...)
-#define debugArr(...)
+#define debug(...) void(0)
+#define debugArr(...) void(0)
 #define TIME_BLOCK(name, t) if (true)
 #endif // Debugging locally
 ```
@@ -180,7 +181,7 @@ TIME_BLOCK ("sorting", 1)
 ## Typical Workflow
 
 ```bash
-# 1. Write your solution in Code.cpp
+# 1. Write your solution in src/Code.cpp
 # 2. Fetch and Test
 make -f Makefile test CONTEST=1847 PROBLEM=D
 

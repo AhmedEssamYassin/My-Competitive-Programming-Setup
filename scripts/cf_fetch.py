@@ -7,21 +7,13 @@ import os
 import re
 import json
 import glob
+import time
+from utils import GREEN, RED, YELLOW, BLUE, RESET
 
-# ANSI color codes (work in Windows Terminal, Git Bash, but not old cmd)
-try:
-    # Enable ANSI colors on Windows 10+
-    os.system('')
-    GREEN = '\033[0;32m'
-    RED = '\033[0;31m'
-    YELLOW = '\033[1;33m'
-    BLUE = '\033[0;34m'
-    RESET = '\033[0m'
-except:
-    GREEN = RED = YELLOW = BLUE =  RESET = ''
-
-def fetchTests(typeParam:str, contestId: str, problemLetter: str):
-    """Fetch sample tests from Codeforces problem page using Scrapling."""
+def fetchTests(typeParam: str, contestId: str, problemLetter: str, _retryCount: int = 0):
+    """Fetch sample tests from Codeforces problem page using Scrapling.
+    Retries up to 3 times on transient network errors with a 1-second backoff."""
+    _maxRetries = 2
     typeParam = typeParam.lower()
     problemLetter = problemLetter.upper()
     if typeParam == "problemset":
@@ -55,8 +47,6 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
                       getattr(page, 'status', 200) in (403, 503))
                       
         if isBlocked:
-            import sys
-
             isWindows = sys.platform == "win32"
             strategy = "StealthyFetcher (Windows)" if isWindows else "curl_cffi (Linux)"
             print(f"{YELLOW}Fast fetch blocked. Retrying with {strategy}...{RESET}")
@@ -107,7 +97,14 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
             print(f"\n{YELLOW}Environment Hint:{RESET} If you are running this on a headless Linux server, WSL, or Docker,")
             print("you likely need to install system dependencies for the headless browser.")
             print(f"Run this command to fix it: {GREEN}npx playwright install chromium --with-deps{RESET}\n")
-            
+
+        # Retry on transient network errors
+        if _retryCount < _maxRetries:
+            waitSecs = _retryCount + 1
+            print(f"{YELLOW}Network error ({e}). Retrying in {waitSecs}s... ({_retryCount + 1}/{_maxRetries}){RESET}")
+            time.sleep(waitSecs)
+            return fetchTests(typeParam, contestId, problemLetter, _retryCount + 1)
+
         print(f"{RED}ERROR{RESET}: Unexpected error while fetching: {e}")
         return False
 
@@ -148,10 +145,13 @@ def fetchTests(typeParam:str, contestId: str, problemLetter: str):
             print("  - Problem doesn't have sample tests")
             print("  - Codeforces changed their HTML structure")
             
-            # Debug: save HTML to file for inspection
-            with open(f"debug_{contestId}_{problemLetter}.html", "w", encoding="utf-8") as f:
+            # Save debug HTML to debug/ subdirectory to avoid polluting project root
+            debugDir = "debug"
+            os.makedirs(debugDir, exist_ok=True)
+            debugPath = os.path.join(debugDir, f"debug_{contestId}_{problemLetter}.html")
+            with open(debugPath, "w", encoding="utf-8") as f:
                 f.write(getattr(page, 'html_content', getattr(page, 'html', str(page))))
-            print(f"  - HTML saved to debug_{contestId}_{problemLetter}.html for inspection")
+            print(f"  - HTML saved to {debugPath} for inspection")
             return False
             
         if len(inputs) != len(outputs):

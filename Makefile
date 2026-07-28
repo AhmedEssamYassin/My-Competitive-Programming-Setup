@@ -1,11 +1,9 @@
-# Color definitions
 GREEN := \033[0;32m
 RED := \033[0;31m
 YELLOW := \033[1;33m
 BLUE := \033[0;34m
 RESET := \033[0m
 
-# Variables
 CXX := g++
 ifeq ($(OS),Windows_NT)
     # Prioritize venv Python, fallback to system Python
@@ -42,7 +40,6 @@ check-tools:
 	@$(PYTHON) -c "import sys; sys.version_info >= (3,0) or sys.exit(1)" || ($(PYTHON) -c "print('$(RED)Python 3 not found!$(RESET)')" && exit 1)
 	@$(PYTHON) -c "print('$(GREEN)Tools checked: $(CXX) and $(PYTHON) found.$(RESET)')"
 
-# Default target
 .DEFAULT_GOAL := help
 all: $(TARGET)
 
@@ -59,9 +56,8 @@ run: $(TARGET)
 	not os.path.exists('input.txt') and \
 	(print('$(RED)Warning: input.txt not found! Creating empty file...$(RESET)'), open('input.txt','w').close()); \
 	print(f'$(YELLOW)Running$(RESET) $(TARGET)...')"
-	@$(PYTHON) -c "import os; os.system('$(TARGET)' if os.name=='nt' else './$(TARGET)')"
+	@$(PYTHON) -c "import os; os.system('$(TARGET)'.replace('/', '\\\\') if os.name=='nt' else './$(TARGET)')"
 
-# Fetch Codeforces samples
 fetch:
 ifeq ($(strip $(CONTEST)$(GYM)$(PROBLEMSET)),)
 	@$(PYTHON) -c "print('$(RED)Error$(RESET): Contest ID required')"
@@ -93,7 +89,6 @@ endif
 tests:
 	$(MKDIR_BIN)
 
-# Test runner
 test-only: $(TARGET)
 ifeq ($(PROBLEM),)
 	@$(PYTHON) -c "print('$(RED)Error$(RESET): PROBLEM parameter is required')"
@@ -102,7 +97,6 @@ ifeq ($(PROBLEM),)
 endif
 	@$(PYTHON) scripts/run_tests.py $(PROBLEM) $(TARGET)
 
-# Clean test files
 clean:
 	@$(PYTHON) -c "print('$(YELLOW)Cleaning...$(RESET)')"
 	$(CLEAN_TEST_FILES)
@@ -114,22 +108,18 @@ listen:
 	@$(PYTHON) -c "print('$(YELLOW)Starting Competitive Companion listener on port 10043...$(RESET)')"
 	@$(PYTHON) scripts/companion_listen.py
 
-# Contest-style test runner (clean -> fetch -> test)
 test: clean fetch test-only
 
-# Debug build
 debug:
 	$(MKDIR_BIN)
 	$(CXX) -std=c++2b -g -O0 -Wall -Wextra -DDEBUG -DLOCAL -Iinclude \
 	    -fsanitize=address,undefined -fno-omit-frame-pointer -o $(TARGET) $(SRC)
 
-# Simple check
 check: check-tools
 	@$(PYTHON) -c "print('$(YELLOW)Checking compiler...$(RESET)')"
 	@$(CXX) --version
 	@$(PYTHON) -c "print('$(GREEN)Check complete!$(RESET)')"
 
-# Show available tests
 show-tests:
 	@$(PYTHON) -c "print('$(BLUE)Available test files:$(RESET)')"
 ifeq ($(OS),Windows_NT)

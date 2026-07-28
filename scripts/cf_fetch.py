@@ -34,10 +34,10 @@ def fetchTests(typeParam: str, contestId: str, problemLetter: str, _retryCount: 
         print(f"{BLUE}Attempting fast fetch...{RESET}")
         page = Fetcher.get(url)
         
-        # 1. Extract the clean, visible text (ignores HTML tags/scripts)
+        # Extract the clean, visible text (ignores HTML tags/scripts)
         pageText = getattr(page, 'text', "")
         
-        # 2. Extract the page Title securely using standard .css()
+        # Extract the page Title securely using standard .css()
         titleNodes = page.css("title")
         title = titleNodes[0].text if titleNodes else ""
         
@@ -109,7 +109,7 @@ def fetchTests(typeParam: str, contestId: str, problemLetter: str, _retryCount: 
         return False
 
     try:
-        # 1. Grab the <pre> blocks inside the input/output divs directly using CSS
+        # Target sample test <pre> blocks inside input/output containers
         inputNodes = page.css(".input pre")
         outputNodes = page.css(".output pre")
         
@@ -162,7 +162,7 @@ def fetchTests(typeParam: str, contestId: str, problemLetter: str, _retryCount: 
 
         os.makedirs("tests", exist_ok=True)
         
-        # Delete ghost tests
+        # Remove existing test files for this problem to prevent stale data
         for oldFile in glob.glob(f"tests/{problemLetter}*.in") + glob.glob(f"tests/{problemLetter}*.out"):
             try:
                 os.remove(oldFile)

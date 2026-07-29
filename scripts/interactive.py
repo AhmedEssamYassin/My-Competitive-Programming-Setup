@@ -249,15 +249,6 @@ def mainLoop():
                         f.write(TEMPLATE)
                     console.print(f"\n[#00ff41]Created {cppFile} with template.[/]")
 
-                    oldTests = glob.glob(f"tests/{prob}*")
-                    for testFile in oldTests:
-                        try:
-                            os.remove(testFile)
-                        except Exception:
-                            pass
-                    if oldTests:
-                        console.print(f"[#666666]Deleted {len(oldTests)} old test files for {prob}.[/]")
-
                     console.print(f"[#666666]Opening {cppFile} in VS Code...[/]")
                     openInVscode(cppFile)
 
@@ -268,6 +259,16 @@ def mainLoop():
                         default="n"
                     )
                     if fetchNow == "y":
+                        # Only delete old tests when we are about to replace them
+                        oldTests = glob.glob(f"tests/{prob}*")
+                        for testFile in oldTests:
+                            try:
+                                os.remove(testFile)
+                            except Exception:
+                                pass
+                        if oldTests:
+                            console.print(f"[#666666]Deleted {len(oldTests)} old test files for {prob}.[/]")
+
                         fetchType = Prompt.ask(
                             "[#00e5ff]Fetch type[/]",
                             choices=["contest", "gym", "problemset"],
@@ -301,15 +302,22 @@ def mainLoop():
                 Prompt.ask("\n[#666666]Press Enter to continue...[/]")
                 clearScreen()
 
-            # ── compile ─────────────────────────────────────────────────────────────
+            # ── compile ─────────────────────────────────────────────────────────
             elif action == "compile":
-                src, target, _ = parseFileAndProblem(args)
-                console.print(f"\n[#666666]Compiling src/{src}...[/]")
-                res = subprocess.run(["make", "all", f"SRC=src/{src}", f"TARGET=bin/{target}"])
-                if res.returncode == 0:
-                    console.print("\n[bold #00ff41]Compilation successful.[/]")
+                if not args:
+                    console.print("\n[bold #ff1744]Specify a file to compile (e.g., compile F.cpp)[/]")
                 else:
-                    console.print("\n[bold #ff1744]Compilation failed.[/]")
+                    src = args[0]
+                    # Ensure it has a .cpp extension so bare names like "F" also work
+                    if not src.endswith(".cpp"):
+                        src += ".cpp"
+                    target = src.replace(".cpp", "")
+                    console.print(f"\n[#666666]Compiling src/{src}...[/]")
+                    res = subprocess.run(["make", "all", f"SRC=src/{src}", f"TARGET=bin/{target}"])
+                    if res.returncode == 0:
+                        console.print("\n[bold #00ff41]Compilation successful.[/]")
+                    else:
+                        console.print("\n[bold #ff1744]Compilation failed.[/]")
                 Prompt.ask("\n[#666666]Press Enter to continue...[/]")
                 clearScreen()
 

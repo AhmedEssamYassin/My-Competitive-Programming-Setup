@@ -118,7 +118,7 @@ test: clean fetch test-only
 debug:
 	$(MKDIR_BIN)
 ifeq ($(OS),Windows_NT)
-	# MSYS2/ucrt64 does not ship libasan/libubsan — sanitizers skipped on Windows
+	@ MSYS2/ucrt64 does not ship libasan/libubsan — sanitizers skipped on Windows
 	$(CXX) -std=c++2b -g -O0 -Wall -Wextra -DDEBUG -DLOCAL -Iinclude \
 	    -fno-omit-frame-pointer -o $(TARGET) $(SRC)
 else

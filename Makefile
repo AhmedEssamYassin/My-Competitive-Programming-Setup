@@ -12,7 +12,12 @@ else
     PYTHON ?= $(if $(wildcard venv/bin/python),"venv/bin/python","$(shell which python3 2>/dev/null || which python 2>/dev/null || echo python3)")
 endif
 CXXFLAGS := -std=c++2b -O3 -DLOCAL -Iinclude
-SRC ?= src/Code.cpp
+# If PROBLEM is given, derive SRC from it (e.g. PROBLEM=F -> src/F.cpp)
+ifdef PROBLEM
+    SRC ?= src/$(PROBLEM).cpp
+else
+    SRC ?= src/Code.cpp
+endif
 TARGET ?= bin/$(basename $(notdir $(SRC)))
 
 CONTEST ?=
@@ -112,8 +117,14 @@ test: clean fetch test-only
 
 debug:
 	$(MKDIR_BIN)
+ifeq ($(OS),Windows_NT)
+	# MSYS2/ucrt64 does not ship libasan/libubsan — sanitizers skipped on Windows
+	$(CXX) -std=c++2b -g -O0 -Wall -Wextra -DDEBUG -DLOCAL -Iinclude \
+	    -fno-omit-frame-pointer -o $(TARGET) $(SRC)
+else
 	$(CXX) -std=c++2b -g -O0 -Wall -Wextra -DDEBUG -DLOCAL -Iinclude \
 	    -fsanitize=address,undefined -fno-omit-frame-pointer -o $(TARGET) $(SRC)
+endif
 
 check: check-tools
 	@$(PYTHON) -c "print('$(YELLOW)Checking compiler...$(RESET)')"

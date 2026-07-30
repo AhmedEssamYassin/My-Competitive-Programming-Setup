@@ -131,7 +131,7 @@ def printStatus():
     console.print("[bold #00ff41]Commands:[/]")
     console.print("  [#00e5ff]new \\[prob][/]          - Create src/\\[prob].cpp from template & clean old tests")
     console.print("  [#00e5ff]open \\[prob][/]         - Open src/\\[prob].cpp in VS Code")
-    console.print("  [#00e5ff]test \\[prob][/]         - Compile src/Code.cpp & run tests for \\[prob]")
+    console.print("  [#00e5ff]test \\[prob][/]         - Compile src/\\[prob].cpp & run tests for \\[prob]")
     console.print("  [#00e5ff]test \\[file] \\[prob][/]  - Compile src/\\[file] & run tests for \\[prob]")
     console.print("  [#00e5ff]debug \\[file] \\[prob][/] - Compile with sanitizers & run tests")
     console.print("  [#00e5ff]compile \\[file][/]      - Compile only (e.g. compile C.cpp)")
@@ -149,13 +149,17 @@ def parseFileAndProblem(args):
     if len(args) == 0:
         return "Code.cpp", "Code", "CODE"
     elif len(args) == 1:
-        # test C -> Code.cpp on problem C
-        return "Code.cpp", "Code", args[0].upper()
+        # test F  ->  src/F.cpp, bin/F, problem F
+        prob = args[0].upper()
+        src = prob + ".cpp"
+        return src, prob, prob
     else:
-        # test C.cpp C -> C.cpp on problem C
+        # test F.cpp F  ->  src/F.cpp, bin/F, problem F
         src = args[0]
+        if not src.endswith(".cpp"):
+            src += ".cpp"
         prob = args[1].upper()
-        target = src.replace('.cpp', '')
+        target = src.replace(".cpp", "").upper()
         return src, target, prob
 
 
@@ -220,7 +224,7 @@ def mainLoop():
                 console.print("\n[#00ff41]2. open \\[prob][/]")
                 console.print("   Opens the problem's C++ file in VS Code. (e.g. [#e0e0e0]open C[/] or just [#e0e0e0]open[/])")
                 console.print("\n[#00ff41]3. test \\[prob][/]")
-                console.print("   Compiles Code.cpp and runs it against tests for the problem. (e.g. [#e0e0e0]test C[/])")
+                console.print("   Compiles src/C.cpp and runs it against tests for problem C. (e.g. [#e0e0e0]test C[/])")
                 console.print("\n[#00ff41]4. test \\[file] \\[prob][/]")
                 console.print("   Compiles a specific file and runs tests. (e.g. [#e0e0e0]test C.cpp C[/])")
                 console.print("\n[#00ff41]5. debug \\[file] \\[prob][/]")

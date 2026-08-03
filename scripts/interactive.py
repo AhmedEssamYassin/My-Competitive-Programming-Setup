@@ -6,6 +6,8 @@ import os
 import sys
 import glob
 import subprocess
+import time
+from pathlib import Path
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
@@ -129,18 +131,22 @@ def printStatus():
 
     console.print()
     console.print("[bold #00ff41]Commands:[/]")
-    console.print("  [#00e5ff]new \\[prob][/]          - Create src/\\[prob].cpp from template & clean old tests")
-    console.print("  [#00e5ff]open \\[prob][/]         - Open src/\\[prob].cpp in VS Code")
-    console.print("  [#00e5ff]test \\[prob][/]         - Compile src/\\[prob].cpp & run tests for \\[prob]")
-    console.print("  [#00e5ff]test \\[file] \\[prob][/]  - Compile src/\\[file] & run tests for \\[prob]")
-    console.print("  [#00e5ff]debug \\[file] \\[prob][/] - Compile with sanitizers & run tests")
-    console.print("  [#00e5ff]compile \\[file][/]      - Compile only (e.g. compile C.cpp)")
-    console.print("  [#00e5ff]fetch \\[prob][/]        - Fetch tests (contest / gym / problemset)")
-    console.print("  [#00e5ff]listen[/]              - Start Competitive Companion listener")
-    console.print("  [#00e5ff]history[/]             - Show recent commands")
-    console.print("  [#00e5ff]help[/]                - Show detailed usage examples")
-    console.print("  [#00e5ff]clear[/]               - Clear screen and redraw dashboard")
-    console.print("  [#00e5ff]quit / exit[/]         - Exit shell")
+    console.print("  [#00e5ff]new \\[prob][/]               - Create src/\\[prob].cpp from template & clean old tests")
+    console.print("  [#00e5ff]open \\[prob][/]              - Open src/\\[prob].cpp in VS Code")
+    console.print("  [#00e5ff]run \\[file][/]               - Compile & run against input.txt (no test comparison)")
+    console.print("  [#00e5ff]test \\[prob][/]              - Compile src/\\[prob].cpp & run tests for \\[prob]")
+    console.print("  [#00e5ff]test \\[file] \\[prob][/]       - Compile src/\\[file] & run tests for \\[prob]")
+    console.print("  [#00e5ff]debug \\[file] \\[prob][/]      - Compile with sanitizers & run tests")
+    console.print("  [#00e5ff]compile \\[file][/]           - Compile only (e.g. compile C.cpp)")
+    console.print("  [#00e5ff]addtest \\[prob][/]            - Add a custom test case via editor")
+    console.print("  [#00e5ff]listtests \\[prob][/]          - List all test cases for a problem")
+    console.print("  [#00e5ff]deltest \\[prob] \\[N][/]       - Delete test case N for a problem")
+    console.print("  [#00e5ff]fetch \\[prob][/]             - Fetch tests (contest / gym / problemset)")
+    console.print("  [#00e5ff]listen[/]                   - Start Competitive Companion listener")
+    console.print("  [#00e5ff]history[/]                  - Show recent commands")
+    console.print("  [#00e5ff]help[/]                     - Show detailed usage examples")
+    console.print("  [#00e5ff]clear[/]                    - Clear screen and redraw dashboard")
+    console.print("  [#00e5ff]quit / exit[/]              - Exit shell")
     console.print()
 
 
@@ -223,19 +229,27 @@ def mainLoop():
                 console.print("   Creates a fresh C++ file and opens it in VS Code. (e.g. [#e0e0e0]new C[/])")
                 console.print("\n[#00ff41]2. open \\[prob][/]")
                 console.print("   Opens the problem's C++ file in VS Code. (e.g. [#e0e0e0]open C[/] or just [#e0e0e0]open[/])")
-                console.print("\n[#00ff41]3. test \\[prob][/]")
+                console.print("\n[#00ff41]3. run \\[file][/]")
+                console.print("   Compiles a file and runs it against input.txt. No test comparison. (e.g. [#e0e0e0]run[/] or [#e0e0e0]run C[/])")
+                console.print("\n[#00ff41]4. test \\[prob][/]")
                 console.print("   Compiles src/C.cpp and runs it against tests for problem C. (e.g. [#e0e0e0]test C[/])")
-                console.print("\n[#00ff41]4. test \\[file] \\[prob][/]")
+                console.print("\n[#00ff41]5. test \\[file] \\[prob][/]")
                 console.print("   Compiles a specific file and runs tests. (e.g. [#e0e0e0]test C.cpp C[/])")
-                console.print("\n[#00ff41]5. debug \\[file] \\[prob][/]")
+                console.print("\n[#00ff41]6. debug \\[file] \\[prob][/]")
                 console.print("   Same as test, but compiles with sanitizer flags. (e.g. [#e0e0e0]debug C.cpp C[/])")
-                console.print("\n[#00ff41]6. compile \\[file][/]")
+                console.print("\n[#00ff41]7. compile \\[file][/]")
                 console.print("   Just compiles a file without running tests. (e.g. [#e0e0e0]compile C.cpp[/])")
-                console.print("\n[#00ff41]7. fetch \\[prob][/]")
+                console.print("\n[#00ff41]8. addtest \\[prob][/]")
+                console.print("   Opens a textual editor to write a custom test case (input + expected output). (e.g. [#e0e0e0]addtest C[/])")
+                console.print("\n[#00ff41]9. listtests \\[prob][/]")
+                console.print("   Lists all test files for a problem with sizes and status. (e.g. [#e0e0e0]listtests C[/])")
+                console.print("\n[#00ff41]10. deltest \\[prob] \\[N][/]")
+                console.print("   Deletes test case N for a problem (with confirmation). (e.g. [#e0e0e0]deltest C 3[/])")
+                console.print("\n[#00ff41]11. fetch \\[prob][/]")
                 console.print("   Fetches sample tests interactively (contest/gym/problemset). (e.g. [#e0e0e0]fetch C[/])")
-                console.print("\n[#00ff41]8. listen[/]")
+                console.print("\n[#00ff41]12. listen[/]")
                 console.print("   Starts Competitive Companion listener to fetch tests from your browser.")
-                console.print("\n[#00ff41]9. history[/]")
+                console.print("\n[#00ff41]13. history[/]")
                 console.print("   Shows a list of the last 20 commands you typed.")
                 Prompt.ask("\n[#666666]Press Enter to continue...[/]")
                 clearScreen()
@@ -306,6 +320,74 @@ def mainLoop():
                 Prompt.ask("\n[#666666]Press Enter to continue...[/]")
                 clearScreen()
 
+            # ── run ─────────────────────────────────────────────────────────────
+            elif action == "run":
+                if not args:
+                    src = "Code.cpp"
+                    target = "Code"
+                else:
+                    src = args[0]
+                    if not src.endswith(".cpp"):
+                        src += ".cpp"
+                    target = src.replace(".cpp", "")
+
+                console.print(f"\n[#666666]Compiling src/{src}...[/]")
+                res = subprocess.run(["make", "all", f"SRC=src/{src}", f"TARGET=bin/{target}"])
+                if res.returncode != 0:
+                    console.print("\n[bold #ff1744]Compilation failed.[/]")
+                    Prompt.ask("\n[#666666]Press Enter to continue...[/]")
+                    clearScreen()
+                    continue
+
+                if not os.path.exists("input.txt"):
+                    console.print("[#ff9100]\u26a0 input.txt not found. Creating empty file.[/]")
+                    open("input.txt", "w").close()
+
+                exeName = f"bin/{target}"
+                if os.name == "nt" and not exeName.endswith(".exe"):
+                    if os.path.exists(exeName + ".exe"):
+                        exeName += ".exe"
+
+                console.print(f"\n[bold #00e5ff]\u25b6 Running[/] [#e0e0e0]{exeName}[/] [#666666](stdin ← input.txt)[/]\n")
+                console.print(f"[#333333]{'\u2500' * 50}[/]")
+
+                try:
+                    with open("input.txt", "r", encoding="utf-8") as f:
+                        inputData = f.read()
+
+                    startTime = time.perf_counter()
+                    proc = subprocess.Popen(
+                        [exeName],
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        encoding="utf-8",
+                    )
+                    stdout, stderr = proc.communicate(input=inputData)
+                    elapsed = time.perf_counter() - startTime
+
+                    if stdout:
+                        console.print(stdout, end="", highlight=False)
+                    if stderr:
+                        console.print(f"\n[bold #ff9100]Stderr:[/]")
+                        console.print(stderr, end="", highlight=False)
+
+                    console.print(f"\n[#333333]{'\u2500' * 50}[/]")
+                    exitStyle = "#00ff41" if proc.returncode == 0 else "#ff1744"
+                    console.print(
+                        f"[{exitStyle}]Exit {proc.returncode}[/]  "
+                        f"[#666666]Time: [#e0e0e0]{elapsed:.3f}s[/][/]"
+                    )
+
+                except FileNotFoundError:
+                    console.print(f"[bold #ff1744]Executable not found: {exeName}[/]")
+                except Exception as e:
+                    console.print(f"[bold #ff1744]Error: {e}[/]")
+
+                Prompt.ask("\n[#666666]Press Enter to continue...[/]")
+                clearScreen()
+
             # ── compile ─────────────────────────────────────────────────────────
             elif action == "compile":
                 if not args:
@@ -340,6 +422,138 @@ def mainLoop():
 
                 console.print(f"\n[#666666]Running tests for {probPrefix}...[/]")
                 run_tests.runTestsForProblem(probPrefix, f"bin/{target}")
+
+                Prompt.ask("\n[#666666]Press Enter to continue...[/]")
+                clearScreen()
+
+            # ── addtest ──────────────────────────────────────────────────────────────
+            elif action == "addtest":
+                try:
+                    from test_editor import TestEditorApp
+                except ModuleNotFoundError:
+                    console.print("\n[bold #ff1744]✖ 'textual' is not installed in this environment.[/]")
+                    console.print("[#666666]Run: [#e0e0e0]pip install textual[/][/]")
+                    Prompt.ask("\n[#666666]Press Enter to continue...[/]")
+                    clearScreen()
+                    continue
+
+                prob = args[0].upper() if args else "CODE"
+
+                existingIns = glob.glob(f"tests/{prob}*.in")
+                indices = []
+                for inF in existingIns:
+                    suffix = Path(inF).stem[len(prob):]
+                    if suffix.isdigit():
+                        indices.append(int(suffix))
+                nextIdx = max(indices, default=0) + 1
+                testName = f"{prob}{nextIdx}"
+
+                console.print(f"\n[#00e5ff]Creating test case [bold]{testName}[/][/]")
+                console.print(f"[#666666]Opening editor for input...  (Ctrl+S to save, Esc to cancel)[/]\n")
+
+                inputApp = TestEditorApp(title=f"Input  →  {testName}.in")
+                inputApp.run()
+
+                if inputApp.result is None:
+                    console.print("[#ff9100]Cancelled — no files written.[/]")
+                    Prompt.ask("\n[#666666]Press Enter to continue...[/]")
+                    clearScreen()
+                    continue
+
+                console.print(f"[#666666]Opening editor for expected output...  (Ctrl+S to save, Esc to cancel)[/]\n")
+
+                outputApp = TestEditorApp(title=f"Expected Output  →  {testName}.out")
+                outputApp.run()
+
+                if outputApp.result is None:
+                    console.print("[#ff9100]Cancelled — no files written.[/]")
+                    Prompt.ask("\n[#666666]Press Enter to continue...[/]")
+                    clearScreen()
+                    continue
+
+                os.makedirs("tests", exist_ok=True)
+                inFile  = f"tests/{testName}.in"
+                outFile = f"tests/{testName}.out"
+
+                with open(inFile,  "w", encoding="utf-8") as f:
+                    f.write(inputApp.result)
+                with open(outFile, "w", encoding="utf-8") as f:
+                    f.write(outputApp.result)
+
+                console.print(f"\n[bold #00ff41]\u2714 Saved:[/] [#e0e0e0]{inFile}[/]  [#666666]&[/]  [#e0e0e0]{outFile}[/]")
+                console.print(f"[#666666]Run [#00e5ff]test {prob}[/] to include this case in your test suite.[/]")
+                Prompt.ask("\n[#666666]Press Enter to continue...[/]")
+                clearScreen()
+
+            # ── listtests ─────────────────────────────────────────────────────────────
+            elif action == "listtests":
+                prob = args[0].upper() if args else "CODE"
+                inputFiles = sorted(glob.glob(f"tests/{prob}*.in"))
+
+                if not inputFiles:
+                    console.print(f"\n[#ff1744]No test files found for problem {prob}.[/]")
+                else:
+                    table = Table(
+                        title=f"[bold #e0e0e0]Tests for Problem {prob}[/]",
+                        border_style="#00e5ff",
+                        header_style="bold #00e5ff",
+                        box=box.SQUARE,
+                    )
+                    table.add_column("Test", style="bold #e0e0e0", width=12)
+                    table.add_column("Input Size", justify="right", style="#84967e")
+                    table.add_column(".out", justify="center", width=8)
+                    table.add_column("Output Size", justify="right", style="#84967e")
+
+                    for inPath in inputFiles:
+                        stem    = Path(inPath).stem
+                        outPath = f"tests/{stem}.out"
+                        inSize  = f"{os.path.getsize(inPath)} B"
+                        if os.path.exists(outPath):
+                            outBadge = "[#00ff41]\u2714[/]"
+                            outSize  = f"{os.path.getsize(outPath)} B"
+                        else:
+                            outBadge = "[#ff1744]\u2716 missing[/]"
+                            outSize  = "—"
+                        table.add_row(stem, inSize, outBadge, outSize)
+
+                    console.print()
+                    console.print(table)
+                    console.print(f"[#666666]Tip: [#00e5ff]deltest {prob} <N>[/] removes a test case.[/]")
+
+                Prompt.ask("\n[#666666]Press Enter to continue...[/]")
+                clearScreen()
+
+            # ── deltest ───────────────────────────────────────────────────────────────
+            elif action == "deltest":
+                if len(args) < 2:
+                    console.print("\n[bold #ff1744]Usage: deltest <PROB> <N>  (e.g. [#e0e0e0]deltest C 3[/])[/]")
+                else:
+                    prob     = args[0].upper()
+                    idx      = args[1]
+                    testName = f"{prob}{idx}"
+                    inFile   = f"tests/{testName}.in"
+                    outFile  = f"tests/{testName}.out"
+
+                    toDelete = [f for f in [inFile, outFile] if os.path.exists(f)]
+
+                    if not toDelete:
+                        console.print(f"\n[#ff1744]No files found for test [bold]{testName}[/].[/]")
+                    else:
+                        console.print(f"\n[#ff9100]About to delete:[/]")
+                        for f in toDelete:
+                            console.print(f"  [#e0e0e0]{f}[/]")
+
+                        confirm = Prompt.ask(
+                            "\n[bold #ff9100]Are you sure?[/]",
+                            choices=["y", "n"],
+                            default="n"
+                        )
+                        if confirm == "y":
+                            for f in toDelete:
+                                os.remove(f)
+                            console.print(f"[#00ff41]\u2714 Deleted {len(toDelete)} file(s).[/]")
+                        else:
+                            console.print("[#666666]Cancelled.[/]")
 
                 Prompt.ask("\n[#666666]Press Enter to continue...[/]")
                 clearScreen()
